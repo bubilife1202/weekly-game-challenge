@@ -1,7 +1,7 @@
 [build]
   base = "family-game-hub"
   command = "npm run build"
-  publish = "family-game-hub/dist"
+  publish = "dist"
 
 [[redirects]]
   from = "/*"
