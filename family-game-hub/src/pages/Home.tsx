@@ -15,30 +15,7 @@ export const Home = () => {
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
 
-  // 프로필이 없으면 프로필 생성 유도
-  if (profiles.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center space-y-6">
-          <div className="text-6xl">👨‍👩‍👧‍👦</div>
-          <h1 className="text-3xl font-bold text-textDark">
-            Family Game Hub
-          </h1>
-          <p className="text-lg text-gray-600">
-            가족과 함께 즐기는 게임 플랫폼!
-          </p>
-          <Button
-            variant="primary"
-            size="large"
-            fullWidth
-            onClick={() => navigate('/profiles')}
-          >
-            시작하기
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  // 프로필이 없으면 간단한 안내만 표시 (게스트 모드 가능)
 
   return (
     <div className="min-h-screen bg-background">
@@ -56,11 +33,33 @@ export const Home = () => {
       />
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
-        {/* 프로필 선택 */}
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-medium text-textDark">플레이어:</span>
-          <ProfileSelector />
-        </div>
+        {/* 프로필 선택 또는 게스트 안내 */}
+        {profiles.length > 0 ? (
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-medium text-textDark">플레이어:</span>
+            <ProfileSelector />
+          </div>
+        ) : (
+          <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-2 border-dashed border-primary/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-textDark mb-1">
+                  🎮 게스트 모드
+                </h3>
+                <p className="text-sm text-gray-600">
+                  지금 바로 플레이하거나, 기록 저장을 위해 프로필을 만드세요
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => navigate('/profiles')}
+              >
+                프로필 만들기
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* 게임 목록 */}
         <div className="space-y-4">

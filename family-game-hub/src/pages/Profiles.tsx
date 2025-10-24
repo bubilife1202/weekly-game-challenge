@@ -29,7 +29,16 @@ export const Profiles = () => {
 
   const handleAddProfile = () => {
     if (newProfile.name.trim()) {
-      addProfile(newProfile);
+      // 랜덤 이모지와 색상 선택
+      const randomEmoji = availableEmojis[Math.floor(Math.random() * availableEmojis.length)];
+      const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+
+      addProfile({
+        ...newProfile,
+        emoji: randomEmoji,
+        color: randomColor,
+      });
+
       setNewProfile({
         name: '',
         emoji: availableEmojis[0],
@@ -134,7 +143,7 @@ export const Profiles = () => {
                   {/* 이름 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      이름
+                      이름만 입력하세요
                     </label>
                     <input
                       type="text"
@@ -142,76 +151,18 @@ export const Profiles = () => {
                       onChange={(e) =>
                         setNewProfile({ ...newProfile, name: e.target.value })
                       }
-                      placeholder="이름을 입력하세요"
+                      placeholder="예: 홍길동"
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-primary focus:outline-none text-lg"
                       autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newProfile.name.trim()) {
+                          handleAddProfile();
+                        }
+                      }}
                     />
-                  </div>
-
-                  {/* 나이 (선택사항) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      나이 (선택사항)
-                    </label>
-                    <input
-                      type="number"
-                      value={newProfile.age || ''}
-                      onChange={(e) =>
-                        setNewProfile({
-                          ...newProfile,
-                          age: e.target.value ? parseInt(e.target.value) : undefined,
-                        })
-                      }
-                      placeholder="나이"
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-primary focus:outline-none text-lg"
-                    />
-                  </div>
-
-                  {/* 이모지 선택 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      아이콘 선택
-                    </label>
-                    <div className="grid grid-cols-10 gap-2">
-                      {availableEmojis.map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={() =>
-                            setNewProfile({ ...newProfile, emoji })
-                          }
-                          className={`text-2xl p-2 rounded-lg transition-all ${
-                            newProfile.emoji === emoji
-                              ? 'bg-primary scale-110'
-                              : 'bg-gray-100 hover:bg-gray-200'
-                          }`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 색상 선택 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      색상 선택
-                    </label>
-                    <div className="grid grid-cols-10 gap-2">
-                      {availableColors.map((color) => (
-                        <button
-                          key={color}
-                          onClick={() =>
-                            setNewProfile({ ...newProfile, color })
-                          }
-                          className={`w-10 h-10 rounded-full transition-all ${
-                            newProfile.color === color
-                              ? 'ring-4 ring-textDark scale-110'
-                              : ''
-                          }`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      ✨ 아이콘과 색상은 자동으로 설정됩니다
+                    </p>
                   </div>
 
                   {/* 버튼 */}
