@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Card as CardType, Difficulty } from '../types';
 import { generateCards, difficultyConfig, calculateAccuracy } from '../utils/helpers';
@@ -24,6 +24,17 @@ export const MemoryGame = () => {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [showResult, setShowResult] = useState(false);
+
+  const timeoutRef = useRef<number | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // 난이도 선택 화면
   if (!difficulty) {
@@ -106,7 +117,8 @@ export const MemoryGame = () => {
       if (firstCard && secondCard && firstCard.value === secondCard.value) {
         // 짝 맞음
         soundManager.playMatch();
-        setTimeout(() => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
           setCards((prev) =>
             prev.map((c) =>
               c.id === firstId || c.id === secondId
@@ -121,7 +133,8 @@ export const MemoryGame = () => {
       } else {
         // 짝 틀림
         soundManager.playMismatch();
-        setTimeout(() => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
           setCards((prev) =>
             prev.map((c) =>
               c.id === firstId || c.id === secondId
@@ -162,9 +175,10 @@ export const MemoryGame = () => {
         addRecord(record);
       }
 
-      setTimeout(() => setShowResult(true), 500);
+      const resultTimeout = setTimeout(() => setShowResult(true), 500);
+      return () => clearTimeout(resultTimeout);
     }
-  }, [matchedPairs, difficulty]);
+  }, [matchedPairs, difficulty, currentProfileId, startTime, attempts, addRecord]);
 
   const handlePlayAgain = () => {
     if (difficulty) {
