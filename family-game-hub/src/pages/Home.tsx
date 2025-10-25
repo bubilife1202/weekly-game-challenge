@@ -172,6 +172,22 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 미로 찾기 */}
+          <Card onClick={() => navigate('/game/maze')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🌟</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">미로 찾기</h3>
+                    <p className="text-sm text-gray-600">길을 찾아 골인!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 랭킹 */}

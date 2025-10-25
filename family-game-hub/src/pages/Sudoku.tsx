@@ -74,11 +74,8 @@ export const Sudoku = () => {
         return;
       }
 
-      const newGrid = copyGrid(currentGrid);
-      newGrid[row][col] = num;
-
-      // 유효한 배치인지 확인
-      if (!isValidPlacement(newGrid, row, col, num)) {
+      // 유효한 배치인지 확인 (그리드에 넣기 전에 검증)
+      if (!isValidPlacement(currentGrid, row, col, num)) {
         setMistakes((m) => m + 1);
         soundManager.playMismatch();
         setShowError(true);
@@ -86,6 +83,9 @@ export const Sudoku = () => {
         return;
       }
 
+      // 검증 통과 후 그리드에 추가
+      const newGrid = copyGrid(currentGrid);
+      newGrid[row][col] = num;
       soundManager.playMatch();
       setCurrentGrid(newGrid);
 
@@ -377,13 +377,26 @@ export const Sudoku = () => {
                 </div>
               </div>
             </div>
-            <Button
-              variant="primary"
-              onClick={() => startNewGame(difficulty)}
-              fullWidth
-            >
-              🔄 다시 하기
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="primary"
+                onClick={() => startNewGame(difficulty)}
+                fullWidth
+              >
+                🔄 같은 난이도
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setDifficulty(null);
+                  setCurrentGrid(null);
+                  setIsRunning(false);
+                }}
+                fullWidth
+              >
+                📋 난이도 선택
+              </Button>
+            </div>
           </div>
         )}
       </div>
