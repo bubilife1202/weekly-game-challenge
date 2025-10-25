@@ -41,6 +41,7 @@ interface LevelState {
   updateStreak: (correct: boolean) => void;
   checkDailyProgress: () => void;
   unlockBadge: (badge: Badge) => void;
+  checkBadges: (totalCompleted: number) => void;
   resetDaily: () => void;
   getUnlockedSentences: () => number;
 }
@@ -131,7 +132,7 @@ export const useLevelStore = create<LevelState>()(
         });
 
         // 배지 체크
-        get().checkBadges(newTotalCompleted, sentenceCategory);
+        get().checkBadges(newTotalCompleted);
       },
 
       checkLevelUp: () => {
@@ -239,9 +240,7 @@ export const useLevelStore = create<LevelState>()(
         }
       },
 
-      checkBadges: (totalCompleted: number, category: string) => {
-        const state = get();
-
+      checkBadges: (totalCompleted: number) => {
         // 문장 개수 배지
         if (totalCompleted === 50) {
           get().unlockBadge(ALL_BADGES.find(b => b.id === 'sentence_50')!);

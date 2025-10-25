@@ -8,88 +8,10 @@ import { Confetti } from '../components/effects/Confetti';
 import { Character } from '../components/character/Character';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
-
-// 영어 문장 데이터
-type Sentence = {
-  sentence: string;
-  korean: string;
-  words: string[];
-  blankIndex: number;
-  blankOptions: string[];
-  situation: string;
-  emoji: string;
-  category: string;
-  level: number;
-};
-
-const allSentences: Sentence[] = [
-  // 인사/감정 (Greetings & Feelings)
-  { sentence: 'I am happy', korean: '나는 행복해요', words: ['I', 'am', 'happy'], blankIndex: 1, blankOptions: ['am', 'is', 'are', 'be'], situation: '😊 기분이 아주 좋아요!', emoji: '😊', category: 'greetings', level: 1 },
-  { sentence: 'I am sad', korean: '나는 슬퍼요', words: ['I', 'am', 'sad'], blankIndex: 2, blankOptions: ['sad', 'happy', 'angry', 'tired'], situation: '😢 기분이 안 좋아요', emoji: '😢', category: 'greetings', level: 1 },
-  { sentence: 'Hello my friend', korean: '안녕 내 친구', words: ['Hello', 'my', 'friend'], blankIndex: 0, blankOptions: ['Hello', 'Goodbye', 'Sorry', 'Thanks'], situation: '👋 친구를 만났어요', emoji: '👋', category: 'greetings', level: 1 },
-  { sentence: 'Good morning mom', korean: '좋은 아침이에요 엄마', words: ['Good', 'morning', 'mom'], blankIndex: 1, blankOptions: ['morning', 'night', 'afternoon', 'evening'], situation: '🌅 아침에 일어났어요', emoji: '🌅', category: 'greetings', level: 1 },
-  { sentence: 'Thank you very much', korean: '정말 고마워요', words: ['Thank', 'you', 'very', 'much'], blankIndex: 0, blankOptions: ['Thank', 'Sorry', 'Hello', 'Goodbye'], situation: '🙏 선물을 받았어요', emoji: '🙏', category: 'greetings', level: 1 },
-  { sentence: 'I am sorry', korean: '미안해요', words: ['I', 'am', 'sorry'], blankIndex: 2, blankOptions: ['sorry', 'happy', 'good', 'fine'], situation: '😔 실수를 했어요', emoji: '😔', category: 'greetings', level: 1 },
-  { sentence: 'How are you today', korean: '오늘 어떻게 지내요', words: ['How', 'are', 'you', 'today'], blankIndex: 1, blankOptions: ['are', 'is', 'am', 'be'], situation: '❓ 친구 기분을 물어봐요', emoji: '❓', category: 'greetings', level: 2 },
-  { sentence: 'I feel great today', korean: '오늘 기분이 너무 좋아요', words: ['I', 'feel', 'great', 'today'], blankIndex: 2, blankOptions: ['great', 'bad', 'sad', 'sick'], situation: '🎉 기분 최고의 날!', emoji: '🎉', category: 'greetings', level: 2 },
-  { sentence: 'Nice to meet you', korean: '만나서 반가워요', words: ['Nice', 'to', 'meet', 'you'], blankIndex: 2, blankOptions: ['meet', 'see', 'know', 'like'], situation: '🤝 새로운 친구를 만났어요', emoji: '🤝', category: 'greetings', level: 2 },
-  { sentence: 'See you tomorrow', korean: '내일 봐요', words: ['See', 'you', 'tomorrow'], blankIndex: 2, blankOptions: ['tomorrow', 'today', 'yesterday', 'now'], situation: '👋 친구와 헤어져요', emoji: '👋', category: 'greetings', level: 2 },
-
-  // 일상생활 (Daily Life)
-  { sentence: 'I wake up early', korean: '나는 일찍 일어나요', words: ['I', 'wake', 'up', 'early'], blankIndex: 1, blankOptions: ['wake', 'get', 'stand', 'sit'], situation: '⏰ 아침 6시에 일어났어요', emoji: '⏰', category: 'daily', level: 1 },
-  { sentence: 'I brush my teeth', korean: '나는 이를 닦아요', words: ['I', 'brush', 'my', 'teeth'], blankIndex: 3, blankOptions: ['teeth', 'hair', 'hands', 'face'], situation: '🪥 화장실에서 양치해요', emoji: '🪥', category: 'daily', level: 1 },
-  { sentence: 'I eat breakfast', korean: '나는 아침을 먹어요', words: ['I', 'eat', 'breakfast'], blankIndex: 2, blankOptions: ['breakfast', 'lunch', 'dinner', 'snack'], situation: '🍳 아침 식사 시간이에요', emoji: '🍳', category: 'daily', level: 1 },
-  { sentence: 'I go to bed', korean: '나는 잠자리에 들어요', words: ['I', 'go', 'to', 'bed'], blankIndex: 3, blankOptions: ['bed', 'school', 'park', 'home'], situation: '😴 밤 9시, 잘 시간이에요', emoji: '😴', category: 'daily', level: 1 },
-  { sentence: 'I take a shower', korean: '나는 샤워해요', words: ['I', 'take', 'a', 'shower'], blankIndex: 1, blankOptions: ['take', 'make', 'do', 'get'], situation: '🚿 깨끗이 씻어요', emoji: '🚿', category: 'daily', level: 2 },
-  { sentence: 'I watch TV at night', korean: '나는 밤에 TV를 봐요', words: ['I', 'watch', 'TV', 'at', 'night'], blankIndex: 1, blankOptions: ['watch', 'see', 'look', 'play'], situation: '📺 저녁에 TV를 봐요', emoji: '📺', category: 'daily', level: 2 },
-  { sentence: 'I clean my room', korean: '나는 내 방을 청소해요', words: ['I', 'clean', 'my', 'room'], blankIndex: 1, blankOptions: ['clean', 'make', 'do', 'have'], situation: '🧹 방 정리 시간이에요', emoji: '🧹', category: 'daily', level: 2 },
-  { sentence: 'I help my mom', korean: '나는 엄마를 도와요', words: ['I', 'help', 'my', 'mom'], blankIndex: 1, blankOptions: ['help', 'love', 'see', 'call'], situation: '👩 엄마 심부름해요', emoji: '👩', category: 'daily', level: 2 },
-  { sentence: 'I do my homework every day', korean: '나는 매일 숙제를 해요', words: ['I', 'do', 'my', 'homework', 'every', 'day'], blankIndex: 1, blankOptions: ['do', 'make', 'take', 'get'], situation: '📝 집에서 숙제해요', emoji: '📝', category: 'daily', level: 3 },
-  { sentence: 'I walk my dog in the park', korean: '나는 공원에서 강아지와 산책해요', words: ['I', 'walk', 'my', 'dog', 'in', 'the', 'park'], blankIndex: 1, blankOptions: ['walk', 'run', 'play', 'see'], situation: '🐕 강아지랑 산책해요', emoji: '🐕', category: 'daily', level: 3 },
-
-  // 학교 (School)
-  { sentence: 'I go to school', korean: '나는 학교에 가요', words: ['I', 'go', 'to', 'school'], blankIndex: 1, blankOptions: ['go', 'come', 'walk', 'run'], situation: '🏫 학교 가는 시간이에요', emoji: '🏫', category: 'school', level: 1 },
-  { sentence: 'I study English', korean: '나는 영어를 공부해요', words: ['I', 'study', 'English'], blankIndex: 1, blankOptions: ['study', 'play', 'eat', 'sleep'], situation: '📚 영어 공부 시간이에요', emoji: '📚', category: 'school', level: 1 },
-  { sentence: 'I like math class', korean: '나는 수학 수업이 좋아요', words: ['I', 'like', 'math', 'class'], blankIndex: 1, blankOptions: ['like', 'hate', 'know', 'see'], situation: '🔢 수학 시간이 재미있어요', emoji: '🔢', category: 'school', level: 1 },
-  { sentence: 'I read a book', korean: '나는 책을 읽어요', words: ['I', 'read', 'a', 'book'], blankIndex: 1, blankOptions: ['read', 'write', 'make', 'buy'], situation: '📖 도서관에서 책 읽어요', emoji: '📖', category: 'school', level: 1 },
-  { sentence: 'I write my name', korean: '나는 내 이름을 써요', words: ['I', 'write', 'my', 'name'], blankIndex: 1, blankOptions: ['write', 'read', 'say', 'know'], situation: '✏️ 공책에 이름 써요', emoji: '✏️', category: 'school', level: 1 },
-  { sentence: 'I listen to my teacher', korean: '나는 선생님 말씀을 들어요', words: ['I', 'listen', 'to', 'my', 'teacher'], blankIndex: 1, blankOptions: ['listen', 'talk', 'speak', 'say'], situation: '👨‍🏫 선생님 수업 시간이에요', emoji: '👨‍🏫', category: 'school', level: 2 },
-  { sentence: 'I play with my friends', korean: '나는 친구들과 놀아요', words: ['I', 'play', 'with', 'my', 'friends'], blankIndex: 1, blankOptions: ['play', 'study', 'eat', 'sleep'], situation: '👫 쉬는 시간이에요', emoji: '👫', category: 'school', level: 2 },
-  { sentence: 'I eat lunch at school', korean: '나는 학교에서 점심을 먹어요', words: ['I', 'eat', 'lunch', 'at', 'school'], blankIndex: 1, blankOptions: ['eat', 'make', 'buy', 'cook'], situation: '🍱 급식 시간이에요', emoji: '🍱', category: 'school', level: 2 },
-  { sentence: 'I draw a picture in art class', korean: '나는 미술 시간에 그림을 그려요', words: ['I', 'draw', 'a', 'picture', 'in', 'art', 'class'], blankIndex: 1, blankOptions: ['draw', 'paint', 'make', 'write'], situation: '🎨 미술 시간이에요', emoji: '🎨', category: 'school', level: 3 },
-  { sentence: 'I raise my hand to answer', korean: '나는 대답하려고 손을 들어요', words: ['I', 'raise', 'my', 'hand', 'to', 'answer'], blankIndex: 1, blankOptions: ['raise', 'put', 'make', 'take'], situation: '✋ 질문에 답할게요', emoji: '✋', category: 'school', level: 3 },
-
-  // 가족 (Family)
-  { sentence: 'I love my family', korean: '나는 우리 가족을 사랑해요', words: ['I', 'love', 'my', 'family'], blankIndex: 1, blankOptions: ['love', 'like', 'see', 'know'], situation: '👨‍👩‍👧‍👦 가족이 최고예요', emoji: '👨‍👩‍👧‍👦', category: 'family', level: 1 },
-  { sentence: 'This is my mom', korean: '이분은 우리 엄마예요', words: ['This', 'is', 'my', 'mom'], blankIndex: 1, blankOptions: ['is', 'am', 'are', 'be'], situation: '👩 엄마를 소개해요', emoji: '👩', category: 'family', level: 1 },
-  { sentence: 'This is my dad', korean: '이분은 우리 아빠예요', words: ['This', 'is', 'my', 'dad'], blankIndex: 1, blankOptions: ['is', 'am', 'are', 'be'], situation: '👨 아빠를 소개해요', emoji: '👨', category: 'family', level: 1 },
-  { sentence: 'I have a brother', korean: '나는 남동생이 있어요', words: ['I', 'have', 'a', 'brother'], blankIndex: 1, blankOptions: ['have', 'has', 'am', 'is'], situation: '👦 남동생이 있어요', emoji: '👦', category: 'family', level: 2 },
-  { sentence: 'I have a sister', korean: '나는 여동생이 있어요', words: ['I', 'have', 'a', 'sister'], blankIndex: 1, blankOptions: ['have', 'has', 'am', 'is'], situation: '👧 여동생이 있어요', emoji: '👧', category: 'family', level: 2 },
-  { sentence: 'My family is very happy', korean: '우리 가족은 아주 행복해요', words: ['My', 'family', 'is', 'very', 'happy'], blankIndex: 2, blankOptions: ['is', 'am', 'are', 'be'], situation: '😊 가족이 행복해요', emoji: '😊', category: 'family', level: 2 },
-  { sentence: 'I play with my baby sister', korean: '나는 아기 여동생과 놀아요', words: ['I', 'play', 'with', 'my', 'baby', 'sister'], blankIndex: 1, blankOptions: ['play', 'talk', 'sleep', 'eat'], situation: '👶 아기와 놀아요', emoji: '👶', category: 'family', level: 3 },
-  { sentence: 'My grandma tells me stories', korean: '할머니가 나에게 이야기를 들려줘요', words: ['My', 'grandma', 'tells', 'me', 'stories'], blankIndex: 2, blankOptions: ['tells', 'says', 'talks', 'speaks'], situation: '👵 할머니와 시간을 보내요', emoji: '👵', category: 'family', level: 3 },
-
-  // 취미 (Hobbies)
-  { sentence: 'I like soccer', korean: '나는 축구를 좋아해요', words: ['I', 'like', 'soccer'], blankIndex: 1, blankOptions: ['like', 'play', 'watch', 'know'], situation: '⚽ 축구가 재미있어요', emoji: '⚽', category: 'hobby', level: 1 },
-  { sentence: 'I play the piano', korean: '나는 피아노를 쳐요', words: ['I', 'play', 'the', 'piano'], blankIndex: 1, blankOptions: ['play', 'make', 'do', 'like'], situation: '🎹 피아노 연습해요', emoji: '🎹', category: 'hobby', level: 1 },
-  { sentence: 'I play computer games', korean: '나는 컴퓨터 게임을 해요', words: ['I', 'play', 'computer', 'games'], blankIndex: 1, blankOptions: ['play', 'watch', 'make', 'buy'], situation: '🎮 게임 시간이에요', emoji: '🎮', category: 'hobby', level: 1 },
-  { sentence: 'I sing a song', korean: '나는 노래를 불러요', words: ['I', 'sing', 'a', 'song'], blankIndex: 1, blankOptions: ['sing', 'play', 'listen', 'write'], situation: '🎤 노래 불러요', emoji: '🎤', category: 'hobby', level: 1 },
-  { sentence: 'I draw pictures every day', korean: '나는 매일 그림을 그려요', words: ['I', 'draw', 'pictures', 'every', 'day'], blankIndex: 1, blankOptions: ['draw', 'paint', 'make', 'write'], situation: '🖍️ 그림 그리기를 좋아해요', emoji: '🖍️', category: 'hobby', level: 2 },
-  { sentence: 'I ride my bicycle', korean: '나는 자전거를 타요', words: ['I', 'ride', 'my', 'bicycle'], blankIndex: 1, blankOptions: ['ride', 'drive', 'play', 'run'], situation: '🚲 자전거 타요', emoji: '🚲', category: 'hobby', level: 2 },
-  { sentence: 'I collect toy cars', korean: '나는 장난감 자동차를 수집해요', words: ['I', 'collect', 'toy', 'cars'], blankIndex: 1, blankOptions: ['collect', 'play', 'make', 'buy'], situation: '🚗 장난감 모아요', emoji: '🚗', category: 'hobby', level: 2 },
-  { sentence: 'I love reading comic books', korean: '나는 만화책 읽기를 좋아해요', words: ['I', 'love', 'reading', 'comic', 'books'], blankIndex: 1, blankOptions: ['love', 'like', 'hate', 'know'], situation: '📚 만화책 읽어요', emoji: '📚', category: 'hobby', level: 3 },
-  { sentence: 'I practice swimming every week', korean: '나는 매주 수영 연습을 해요', words: ['I', 'practice', 'swimming', 'every', 'week'], blankIndex: 1, blankOptions: ['practice', 'play', 'do', 'like'], situation: '🏊 수영장에서 연습해요', emoji: '🏊', category: 'hobby', level: 3 },
-
-  // 음식 (Food)
-  { sentence: 'I eat an apple', korean: '나는 사과를 먹어요', words: ['I', 'eat', 'an', 'apple'], blankIndex: 1, blankOptions: ['eat', 'like', 'buy', 'make'], situation: '🍎 사과를 먹어요', emoji: '🍎', category: 'food', level: 1 },
-  { sentence: 'I drink water', korean: '나는 물을 마셔요', words: ['I', 'drink', 'water'], blankIndex: 1, blankOptions: ['drink', 'eat', 'make', 'buy'], situation: '💧 물을 마셔요', emoji: '💧', category: 'food', level: 1 },
-  { sentence: 'I like pizza', korean: '나는 피자를 좋아해요', words: ['I', 'like', 'pizza'], blankIndex: 1, blankOptions: ['like', 'eat', 'make', 'buy'], situation: '🍕 피자가 맛있어요', emoji: '🍕', category: 'food', level: 1 },
-  { sentence: 'I want some milk', korean: '나는 우유를 원해요', words: ['I', 'want', 'some', 'milk'], blankIndex: 1, blankOptions: ['want', 'drink', 'like', 'need'], situation: '🥛 우유 마시고 싶어요', emoji: '🥛', category: 'food', level: 2 },
-  { sentence: 'I eat rice for dinner', korean: '나는 저녁에 밥을 먹어요', words: ['I', 'eat', 'rice', 'for', 'dinner'], blankIndex: 1, blankOptions: ['eat', 'make', 'cook', 'buy'], situation: '🍚 저녁 식사 시간이에요', emoji: '🍚', category: 'food', level: 2 },
-  { sentence: 'I love chocolate cake', korean: '나는 초콜릿 케이크를 좋아해요', words: ['I', 'love', 'chocolate', 'cake'], blankIndex: 1, blankOptions: ['love', 'like', 'eat', 'make'], situation: '🎂 케이크가 최고예요', emoji: '🎂', category: 'food', level: 2 },
-  { sentence: 'My favorite food is ice cream', korean: '내가 제일 좋아하는 음식은 아이스크림이에요', words: ['My', 'favorite', 'food', 'is', 'ice', 'cream'], blankIndex: 3, blankOptions: ['is', 'am', 'are', 'be'], situation: '🍦 아이스크림을 제일 좋아해요', emoji: '🍦', category: 'food', level: 3 },
-  { sentence: 'I always eat vegetables', korean: '나는 항상 채소를 먹어요', words: ['I', 'always', 'eat', 'vegetables'], blankIndex: 2, blankOptions: ['eat', 'like', 'cook', 'buy'], situation: '🥦 건강한 음식을 먹어요', emoji: '🥦', category: 'food', level: 3 },
-];
+import { useLevelStore } from '../store/levelStore';
+import { LevelUpAnimation } from '../components/level/LevelUpAnimation';
+import { XPProgressBar } from '../components/level/XPProgressBar';
+import { allSentences, categoryBackgrounds as importedCategoryBackgrounds, type Sentence } from '../data/sentences';
 
 // 학년별 문장 선택
 const sentencesByGrade = {
@@ -123,6 +45,7 @@ export const EnglishSentences = () => {
   const navigate = useNavigate();
   const { currentProfileId } = useProfileStore();
   const { addRecord } = useGameStore();
+  const levelStore = useLevelStore();
 
   const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
@@ -137,6 +60,11 @@ export const EnglishSentences = () => {
   const [startTime, setStartTime] = useState<number>(0);
   const [wrongSentences, setWrongSentences] = useState<Sentence[]>([]);
 
+  // 레벨업 애니메이션
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [newLevel, setNewLevel] = useState(0);
+  const [unlockedSentences, setUnlockedSentences] = useState(0);
+
   // 순서 맞추기 모드
   const [orderedWords, setOrderedWords] = useState<string[]>([]);
   const [shuffledWords, setShuffledWords] = useState<string[]>([]);
@@ -148,25 +76,24 @@ export const EnglishSentences = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [characterState, setCharacterState] = useState<'idle' | 'happy' | 'sad' | 'thinking'>('idle');
 
-  // 카테고리별 배경 그라디언트
-  const categoryBackgrounds: Record<string, string> = {
-    greetings: 'from-yellow-100 to-orange-100',
-    daily: 'from-blue-100 to-cyan-100',
-    school: 'from-green-100 to-emerald-100',
-    family: 'from-pink-100 to-rose-100',
-    hobby: 'from-purple-100 to-violet-100',
-    food: 'from-red-100 to-orange-100',
-  };
+  // 일일 진행률 체크
+  useEffect(() => {
+    levelStore.checkDailyProgress();
+  }, []);
 
-  // 문제 생성
+  // 문제 생성 (레벨에 따라 제한)
   useEffect(() => {
     if (selectedGrade && gameMode) {
-      const sentences = sentencesByGrade[selectedGrade];
-      const shuffled = [...sentences].sort(() => Math.random() - 0.5);
+      const availableSentences = sentencesByGrade[selectedGrade];
+      const unlockedCount = levelStore.getUnlockedSentences();
+
+      // 레벨에 따라 이용 가능한 문장만 선택
+      const limitedSentences = availableSentences.slice(0, Math.min(unlockedCount, availableSentences.length));
+      const shuffled = [...limitedSentences].sort(() => Math.random() - 0.5);
       setQuestions(shuffled.slice(0, 15)); // 15문제
       setStartTime(Date.now());
     }
-  }, [selectedGrade, gameMode]);
+  }, [selectedGrade, gameMode, levelStore]);
 
   // 순서 맞추기 초기화
   useEffect(() => {
@@ -199,34 +126,7 @@ export const EnglishSentences = () => {
     const userSentence = orderedWords.join(' ');
     const correct = userSentence === sentence.sentence;
 
-    setIsCorrect(correct);
-    setShowAnswer(true);
-
-    if (correct) {
-      setScore(score + 1);
-      setStreak(streak + 1);
-      setMaxStreak(Math.max(maxStreak, streak + 1));
-      soundManager.playMatch();
-      setCharacterState('happy');
-      setShowConfetti(true);
-      // 정답 문장 음성으로 읽기
-      setTimeout(() => {
-        speechManager.speak(sentence.sentence);
-      }, 500);
-    } else {
-      setStreak(0);
-      soundManager.playMismatch();
-      setWrongSentences([...wrongSentences, sentence]);
-      setCharacterState('sad');
-      // 정답 문장 음성으로 읽기
-      setTimeout(() => {
-        speechManager.speak(sentence.sentence);
-      }, 1000);
-    }
-
-    setTimeout(() => {
-      moveToNextQuestion(correct);
-    }, 3000);
+    processAnswer(correct, sentence);
   };
 
   const handleFillBlankAnswer = (answer: string) => {
@@ -236,32 +136,7 @@ export const EnglishSentences = () => {
     const correct = answer === sentence.words[sentence.blankIndex];
 
     setSelectedChoice(answer);
-    setIsCorrect(correct);
-    setShowAnswer(true);
-
-    if (correct) {
-      setScore(score + 1);
-      setStreak(streak + 1);
-      setMaxStreak(Math.max(maxStreak, streak + 1));
-      soundManager.playMatch();
-      setCharacterState('happy');
-      setShowConfetti(true);
-      setTimeout(() => {
-        speechManager.speak(sentence.sentence);
-      }, 500);
-    } else {
-      setStreak(0);
-      soundManager.playMismatch();
-      setWrongSentences([...wrongSentences, sentence]);
-      setCharacterState('sad');
-      setTimeout(() => {
-        speechManager.speak(sentence.sentence);
-      }, 1000);
-    }
-
-    setTimeout(() => {
-      moveToNextQuestion(correct);
-    }, 3000);
+    processAnswer(correct, sentence);
   };
 
   const handleChooseAnswer = (answer: string) => {
@@ -271,6 +146,10 @@ export const EnglishSentences = () => {
     const correct = answer === sentence.sentence;
 
     setSelectedChoice(answer);
+    processAnswer(correct, sentence);
+  };
+
+  const processAnswer = (correct: boolean, sentence: Sentence) => {
     setIsCorrect(correct);
     setShowAnswer(true);
 
@@ -281,6 +160,13 @@ export const EnglishSentences = () => {
       soundManager.playMatch();
       setCharacterState('happy');
       setShowConfetti(true);
+
+      // XP 추가 (기본 10XP + 연속 보너스 5XP)
+      const xpEarned = 10 + (streak >= 3 ? 5 : 0);
+      levelStore.addXP(xpEarned, sentence.category);
+      levelStore.updateStreak(true);
+
+      // 정답 문장 음성으로 읽기
       setTimeout(() => {
         speechManager.speak(sentence.sentence);
       }, 500);
@@ -289,6 +175,9 @@ export const EnglishSentences = () => {
       soundManager.playMismatch();
       setWrongSentences([...wrongSentences, sentence]);
       setCharacterState('sad');
+      levelStore.updateStreak(false);
+
+      // 정답 문장 음성으로 읽기
       setTimeout(() => {
         speechManager.speak(sentence.sentence);
       }, 1000);
@@ -315,9 +204,12 @@ export const EnglishSentences = () => {
       soundManager.playComplete();
       setShowResult(true);
 
+      const finalScore = score + (correct ? 1 : 0);
+      const time = Math.floor((Date.now() - startTime) / 1000);
+      const percentage = Math.round((finalScore / questions.length) * 100);
+
+      // 게임 기록 저장
       if (currentProfileId) {
-        const time = Math.floor((Date.now() - startTime) / 1000);
-        const finalScore = score + (correct ? 1 : 0);
         addRecord({
           profileId: currentProfileId,
           gameType: 'memory',
@@ -325,9 +217,20 @@ export const EnglishSentences = () => {
           score: finalScore,
           time,
           attempts: questions.length,
-          accuracy: Math.round((finalScore / questions.length) * 100),
+          accuracy: percentage,
           completedAt: Date.now(),
         });
+      }
+
+      // 배지 체크
+      checkBadges(finalScore, questions.length, time);
+
+      // 레벨업 체크
+      const leveledUp = levelStore.checkLevelUp();
+      if (leveledUp) {
+        setNewLevel(levelStore.currentLevel);
+        setUnlockedSentences(levelStore.getUnlockedSentences());
+        setShowLevelUp(true);
       }
     } else {
       setCurrentQuestion(currentQuestion + 1);
@@ -337,6 +240,20 @@ export const EnglishSentences = () => {
       setOrderedWords([]);
       setShowConfetti(false);
       setCharacterState('idle');
+    }
+  };
+
+  const checkBadges = (finalScore: number, totalQuestions: number, time: number) => {
+    const percentage = (finalScore / totalQuestions) * 100;
+
+    // 완벽주의자 배지 (100%)
+    if (percentage === 100) {
+      levelStore.unlockBadge({ id: 'perfect', name: '완벽주의자', description: '100% 정답으로 게임 완료', emoji: '💯' });
+    }
+
+    // 스피드러너 배지 (10문제 30초 이내)
+    if (totalQuestions >= 10 && time <= 30) {
+      levelStore.unlockBadge({ id: 'speed', name: '스피드러너', description: '30초 안에 10문제 클리어', emoji: '⏱️' });
     }
   };
 
@@ -356,43 +273,97 @@ export const EnglishSentences = () => {
     setShuffledWords([]);
   };
 
+  // 레벨업 애니메이션 종료
+  const handleLevelUpComplete = () => {
+    setShowLevelUp(false);
+  };
+
   // 학년 선택 화면
   if (!selectedGrade) {
     return (
       <div className="min-h-screen bg-background">
         <Header title="📖 영어 문장 만들기" showBack />
-        <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
+
+        {/* XP 진행률 바 */}
+        <div className="max-w-2xl mx-auto p-4 pt-2">
+          <XPProgressBar showDetails={true} compact={false} />
+        </div>
+
+        <div className="max-w-2xl mx-auto p-4 space-y-6 py-4">
           <div className="text-center space-y-4">
             <div className="text-6xl animate-bounce">📝</div>
             <h2 className="text-2xl font-bold text-textDark">
               학년을 선택하세요
             </h2>
             <p className="text-gray-600">문장을 만들며 영어를 배워요!</p>
+            <div className="bg-primary/10 rounded-xl p-3">
+              <p className="text-sm text-primary font-bold">
+                🔓 현재 {levelStore.getUnlockedSentences()}개 문장 해금!
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
-            {Object.entries(gradeNames).map(([key, name]) => (
-              <button
-                key={key}
-                onClick={() => setSelectedGrade(key as Grade)}
-                className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-left">
-                    <div className="text-xl font-bold text-textDark mb-1">{name}</div>
-                    <div className="text-sm text-gray-600">
-                      {sentencesByGrade[key as Grade].length}개 문장 수록
+            {Object.entries(gradeNames).map(([key, name]) => {
+              const availableSentences = sentencesByGrade[key as Grade];
+              const unlockedCount = levelStore.getUnlockedSentences();
+              const totalSentences = availableSentences.length;
+              const accessibleSentences = Math.min(unlockedCount, totalSentences);
+
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedGrade(key as Grade)}
+                  className="w-full bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <div className="text-xl font-bold text-textDark mb-1">{name}</div>
+                      <div className="text-sm text-gray-600">
+                        {accessibleSentences}/{totalSentences}개 문장 이용 가능
+                      </div>
+                    </div>
+                    <div className="text-4xl">
+                      {key === 'grade1' && '🌟'}
+                      {key === 'grade2' && '⭐'}
+                      {key === 'grade3' && '✨'}
                     </div>
                   </div>
-                  <div className="text-4xl">
-                    {key === 'grade1' && '🌟'}
-                    {key === 'grade2' && '⭐'}
-                    {key === 'grade3' && '✨'}
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
+
+          {/* 일일 목표 */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-textDark">오늘의 목표</h3>
+              <span className="text-2xl">🎯</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>{levelStore.dailyProgress} / {levelStore.dailyGoal} 문장</span>
+                <span>{Math.round((levelStore.dailyProgress / levelStore.dailyGoal) * 100)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (levelStore.dailyProgress / levelStore.dailyGoal) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 연속 출석 */}
+          {levelStore.consecutiveDays > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-lg text-center">
+              <div className="text-5xl mb-2">🔥</div>
+              <div className="text-2xl font-bold text-primary mb-1">
+                {levelStore.consecutiveDays}일 연속
+              </div>
+              <div className="text-sm text-gray-600">매일 공부하고 있어요!</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -447,64 +418,85 @@ export const EnglishSentences = () => {
     const stars = percentage >= 90 ? '⭐⭐⭐' : percentage >= 70 ? '⭐⭐' : percentage >= 50 ? '⭐' : '';
 
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <Header title="📖 학습 완료!" showBack />
-        <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
-          <div className="text-center space-y-4">
-            <div className="text-8xl animate-bounce">{passed ? '🎉' : '📚'}</div>
-            <h2 className="text-3xl font-bold text-textDark">
-              {passed ? '완벽해요!' : '조금 더 연습해요!'}
-            </h2>
-            <div className="text-6xl font-bold text-primary">{percentage}점</div>
-            {stars && <div className="text-5xl">{stars}</div>}
-          </div>
+      <>
+        {/* 레벨업 애니메이션 */}
+        {showLevelUp && (
+          <LevelUpAnimation
+            show={showLevelUp}
+            newLevel={newLevel}
+            unlockedSentences={unlockedSentences}
+            onComplete={handleLevelUpComplete}
+          />
+        )}
 
-          <div className="bg-white rounded-2xl p-6 shadow-lg space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">맞힌 문장</span>
-              <span className="font-bold text-success">{score}개</span>
+        <div className="min-h-screen bg-background pb-20">
+          <Header title="📖 학습 완료!" showBack />
+          <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
+            <div className="text-center space-y-4">
+              <div className="text-8xl animate-bounce">{passed ? '🎉' : '📚'}</div>
+              <h2 className="text-3xl font-bold text-textDark">
+                {passed ? '완벽해요!' : '조금 더 연습해요!'}
+              </h2>
+              <div className="text-6xl font-bold text-primary">{percentage}점</div>
+              {stars && <div className="text-5xl">{stars}</div>}
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">틀린 문장</span>
-              <span className="font-bold text-primary">{questions.length - score}개</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">정확도</span>
-              <span className="font-bold text-secondary">{percentage}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">최고 연속 정답</span>
-              <span className="font-bold text-success">🔥 {maxStreak}개</span>
-            </div>
-          </div>
 
-          {/* 틀린 문장 복습 */}
-          {wrongSentences.length > 0 && (
             <div className="bg-white rounded-2xl p-6 shadow-lg space-y-4">
-              <h3 className="text-xl font-bold text-primary">📝 복습하세요!</h3>
-              <div className="space-y-3">
-                {wrongSentences.map((sentence, index) => (
-                  <div key={index} className="bg-background rounded-xl p-4">
-                    <div className="space-y-2">
-                      <div className="font-bold text-lg text-textDark">{sentence.sentence}</div>
-                      <div className="text-sm text-gray-600">{sentence.emoji} {sentence.korean}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex justify-between">
+                <span className="text-gray-600">맞힌 문장</span>
+                <span className="font-bold text-success">{score}개</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">틀린 문장</span>
+                <span className="font-bold text-primary">{questions.length - score}개</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">정확도</span>
+                <span className="font-bold text-secondary">{percentage}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">최고 연속 정답</span>
+                <span className="font-bold text-success">🔥 {maxStreak}개</span>
               </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" onClick={handlePlayAgain} fullWidth>
-              🔄 다시 공부
-            </Button>
-            <Button variant="primary" onClick={() => navigate('/')} fullWidth>
-              🏠 홈으로
-            </Button>
+            {/* XP 진행률 */}
+            <XPProgressBar showDetails={true} compact={false} />
+
+            {/* 틀린 문장 복습 */}
+            {wrongSentences.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-lg space-y-4">
+                <h3 className="text-xl font-bold text-primary">📝 복습하세요!</h3>
+                <div className="space-y-3">
+                  {wrongSentences.map((sentence, index) => (
+                    <div key={index} className="bg-background rounded-xl p-4">
+                      <div className="space-y-2">
+                        <div className="font-bold text-lg text-textDark">{sentence.sentence}</div>
+                        <div className="text-sm text-gray-600">{sentence.emoji} {sentence.korean}</div>
+                        <button
+                          onClick={() => speechManager.speak(sentence.sentence)}
+                          className="text-xs bg-secondary/20 text-secondary px-3 py-1 rounded-lg font-bold"
+                        >
+                          🔊 듣기
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="secondary" onClick={handlePlayAgain} fullWidth>
+                🔄 다시 공부
+              </Button>
+              <Button variant="primary" onClick={() => navigate('/')} fullWidth>
+                🏠 홈으로
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -512,7 +504,7 @@ export const EnglishSentences = () => {
   if (questions.length === 0) return null;
 
   const sentence = questions[currentQuestion];
-  const currentBackground = categoryBackgrounds[sentence.category] || 'from-gray-100 to-white';
+  const currentBackground = importedCategoryBackgrounds[sentence.category] || 'from-gray-100 to-white';
 
   return (
     <div className={`min-h-screen bg-gradient-to-b ${currentBackground} pb-20 transition-all duration-700`}>
