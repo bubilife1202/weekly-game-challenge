@@ -93,19 +93,19 @@ export const Home = () => {
             </div>
           </Card>
 
-          {/* 곧 출시 예정 */}
-          <Card className="opacity-60 cursor-not-allowed">
+          {/* 색칠하기 게임 */}
+          <Card onClick={() => navigate('/game/coloring')}>
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <span className="text-4xl">🎨</span>
                   <div>
                     <h3 className="text-xl font-bold text-textDark">색칠하기</h3>
-                    <p className="text-sm text-gray-600">곧 출시!</p>
+                    <p className="text-sm text-gray-600">마음껏 색칠해보세요!</p>
                   </div>
                 </div>
               </div>
-              <div className="text-2xl">🔒</div>
+              <div className="text-2xl">→</div>
             </div>
           </Card>
         </div>

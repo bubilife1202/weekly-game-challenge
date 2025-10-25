@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { MemoryGame } from './pages/MemoryGame';
+import { ColoringGame } from './pages/ColoringGame';
 import { Profiles } from './pages/Profiles';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/settingsStore';
@@ -20,6 +21,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/game/memory" element={<MemoryGame />} />
+        <Route path="/game/coloring" element={<ColoringGame />} />
         <Route path="/profiles" element={<Profiles />} />
       </Routes>
     </BrowserRouter>
