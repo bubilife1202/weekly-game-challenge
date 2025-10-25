@@ -178,11 +178,10 @@ export const ColoringGame = () => {
   const [showSaveMessage, setShowSaveMessage] = useState(false);
   const canvasRef = useRef<SVGSVGElement>(null);
 
-  // 카메라 관련 state
+  // 사진 관련 state
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const photoCanvasRef = useRef<HTMLCanvasElement>(null);
   const coloringCanvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 모바일 체크
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -199,58 +198,32 @@ export const ColoringGame = () => {
     }
   }, [selectedTemplate]);
 
-  // 카메라 시작
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 }
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (err) {
-      console.error('카메라 접근 실패:', err);
-      alert('카메라에 접근할 수 없습니다. 권한을 확인해주세요.');
-      setSelectedTemplate(null);
-    }
-  };
+  // 파일 선택 (카메라 or 갤러리)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // 사진 촬영
-  const capturePhoto = () => {
-    if (videoRef.current && photoCanvasRef.current) {
-      const video = videoRef.current;
-      const canvas = photoCanvasRef.current;
-      const ctx = canvas.getContext('2d');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageData = event.target?.result as string;
+      setCapturedImage(imageData);
 
-      if (ctx) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-
-        const imageData = canvas.toDataURL('image/png');
-        setCapturedImage(imageData);
-
-        // 카메라 스트림 종료
-        const stream = video.srcObject as MediaStream;
-        stream?.getTracks().forEach(track => track.stop());
-
-        // 색칠용 캔버스에 이미지 로드
-        const img = new Image();
-        img.onload = () => {
-          if (coloringCanvasRef.current) {
-            const colorCanvas = coloringCanvasRef.current;
-            const colorCtx = colorCanvas.getContext('2d');
-            if (colorCtx) {
-              colorCanvas.width = 500;
-              colorCanvas.height = 500;
-              colorCtx.drawImage(img, 0, 0, 500, 500);
-            }
+      // 색칠용 캔버스에 이미지 로드
+      const img = new Image();
+      img.onload = () => {
+        if (coloringCanvasRef.current) {
+          const colorCanvas = coloringCanvasRef.current;
+          const colorCtx = colorCanvas.getContext('2d');
+          if (colorCtx) {
+            colorCanvas.width = 500;
+            colorCanvas.height = 500;
+            colorCtx.drawImage(img, 0, 0, 500, 500);
           }
-        };
-        img.src = imageData;
-      }
-    }
+        }
+      };
+      img.src = imageData;
+    };
+    reader.readAsDataURL(file);
   };
 
   // 캔버스 색칠 (flood fill)
@@ -434,12 +407,7 @@ export const ColoringGame = () => {
               <button
                 key={template.id}
                 onClick={() => {
-                  if (template.id === 'camera') {
-                    setSelectedTemplate(index);
-                    startCamera();
-                  } else {
-                    setSelectedTemplate(index);
-                  }
+                  setSelectedTemplate(index);
                 }}
                 className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 active:scale-95"
               >
@@ -463,43 +431,55 @@ export const ColoringGame = () => {
 
   const template = coloringTemplates[selectedTemplate];
 
-  // 카메라 모드
+  // 사진 선택 모드
   if (template.id === 'camera' && !capturedImage) {
     return (
       <div className="min-h-screen bg-background">
-        <Header title="📸 사진 촬영" showBack />
+        <Header title="📸 사진 선택" showBack />
         <div className="max-w-4xl mx-auto p-4 space-y-4">
-          <div className="text-center space-y-4 mb-4">
-            <p className="text-gray-600">사진을 찍으면 색칠할 수 있어요!</p>
+          <div className="text-center space-y-4">
+            <div className="text-6xl">📸</div>
+            <h2 className="text-2xl font-bold text-textDark">
+              사진을 선택하세요
+            </h2>
+            <p className="text-gray-600">
+              카메라로 촬영하거나 갤러리에서 선택할 수 있어요!
+            </p>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          <div className="space-y-3">
+            <Button
+              variant="primary"
+              onClick={() => fileInputRef.current?.click()}
+              fullWidth
+            >
+              📷 사진 선택하기
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setSelectedTemplate(null)}
+              fullWidth
+            >
+              ← 다른 그림 선택
+            </Button>
           </div>
 
           <div className="bg-white rounded-2xl p-4 shadow-lg">
-            <video
-              ref={videoRef}
-              className="w-full rounded-lg"
-              autoPlay
-              playsInline
-            />
-            <canvas ref={photoCanvasRef} className="hidden" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (videoRef.current) {
-                  const stream = videoRef.current.srcObject as MediaStream;
-                  stream?.getTracks().forEach(track => track.stop());
-                }
-                setSelectedTemplate(null);
-              }}
-              fullWidth
-            >
-              ← 취소
-            </Button>
-            <Button variant="primary" onClick={capturePhoto} fullWidth>
-              📸 촬영
-            </Button>
+            <h3 className="text-lg font-bold text-textDark mb-2">💡 팁</h3>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• 단순한 배경이 색칠하기 쉬워요</li>
+              <li>• 명암이 뚜렷한 사진이 좋아요</li>
+              <li>• 셀카, 풍경, 사물 모두 가능해요!</li>
+            </ul>
           </div>
         </div>
       </div>
