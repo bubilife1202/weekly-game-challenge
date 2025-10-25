@@ -26,6 +26,12 @@ export const MazeGame = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [moves, setMoves] = useState(0);
 
+  // 조이스틱 상태
+  const [joystickActive, setJoystickActive] = useState(false);
+  const [joystickBase, setJoystickBase] = useState({ x: 0, y: 0 });
+  const [joystickStick, setJoystickStick] = useState({ x: 0, y: 0 });
+  const [currentDirection, setCurrentDirection] = useState<'up' | 'down' | 'left' | 'right' | null>(null);
+
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
 
@@ -155,65 +161,91 @@ export const MazeGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [movePlayer, isRunning, isComplete]);
 
-  // 터치/스와이프 컨트롤
+  // 조이스틱 컨트롤
   useEffect(() => {
     if (!isRunning || isComplete) return;
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
-
-    const minSwipeDistance = 30; // 최소 스와이프 거리
+    const joystickRadius = 60; // 조이스틱 반경
+    const deadZone = 15; // 중앙 데드존
 
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
+      const touch = e.touches[0];
+      // 조이스틱 베이스를 터치 시작 위치에 배치
+      setJoystickBase({ x: touch.clientX, y: touch.clientY });
+      setJoystickStick({ x: touch.clientX, y: touch.clientY });
+      setJoystickActive(true);
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      touchEndX = e.changedTouches[0].screenX;
-      touchEndY = e.changedTouches[0].screenY;
-      handleSwipe();
-    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!joystickActive) return;
+      e.preventDefault();
 
-    const handleSwipe = () => {
-      const deltaX = touchEndX - touchStartX;
-      const deltaY = touchEndY - touchStartY;
-      const absDeltaX = Math.abs(deltaX);
-      const absDeltaY = Math.abs(deltaY);
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - joystickBase.x;
+      const deltaY = touch.clientY - joystickBase.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      // 스와이프 거리가 충분한지 확인
-      if (absDeltaX < minSwipeDistance && absDeltaY < minSwipeDistance) {
+      // 데드존 체크
+      if (distance < deadZone) {
+        setCurrentDirection(null);
+        setJoystickStick({ x: joystickBase.x, y: joystickBase.y });
         return;
       }
 
-      // 가로/세로 중 더 큰 이동 방향으로 처리
-      if (absDeltaX > absDeltaY) {
-        // 가로 스와이프
-        if (deltaX > 0) {
-          movePlayer('right');
-        } else {
-          movePlayer('left');
-        }
-      } else {
-        // 세로 스와이프
-        if (deltaY > 0) {
-          movePlayer('down');
-        } else {
-          movePlayer('up');
-        }
+      // 스틱 위치 제한 (조이스틱 반경 내)
+      let stickX = touch.clientX;
+      let stickY = touch.clientY;
+      if (distance > joystickRadius) {
+        const angle = Math.atan2(deltaY, deltaX);
+        stickX = joystickBase.x + Math.cos(angle) * joystickRadius;
+        stickY = joystickBase.y + Math.sin(angle) * joystickRadius;
       }
+      setJoystickStick({ x: stickX, y: stickY });
+
+      // 방향 결정 (4방향)
+      const angle = Math.atan2(deltaY, deltaX);
+      const degrees = (angle * 180) / Math.PI;
+
+      let direction: 'up' | 'down' | 'left' | 'right';
+      if (degrees >= -45 && degrees < 45) {
+        direction = 'right';
+      } else if (degrees >= 45 && degrees < 135) {
+        direction = 'down';
+      } else if (degrees >= -135 && degrees < -45) {
+        direction = 'up';
+      } else {
+        direction = 'left';
+      }
+
+      setCurrentDirection(direction);
+    };
+
+    const handleTouchEnd = () => {
+      setJoystickActive(false);
+      setCurrentDirection(null);
     };
 
     window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [movePlayer, isRunning, isComplete]);
+  }, [joystickActive, joystickBase, isRunning, isComplete]);
+
+  // 연속 이동 (조이스틱 방향에 따라)
+  useEffect(() => {
+    if (!currentDirection || !isRunning || isComplete) return;
+
+    const moveInterval = setInterval(() => {
+      movePlayer(currentDirection);
+    }, 150); // 150ms마다 이동
+
+    return () => clearInterval(moveInterval);
+  }, [currentDirection, movePlayer, isRunning, isComplete]);
 
   // 타이머 포맷
   const formatTime = (seconds: number): string => {
@@ -296,9 +328,9 @@ export const MazeGame = () => {
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-2">
             <div className="font-bold text-blue-900">🎮 조작법:</div>
             <ul className="text-sm text-blue-800 space-y-1 ml-4">
-              <li>• 키보드: WASD 또는 화살표 키</li>
-              <li>• 모바일: 화면을 스와이프하세요!</li>
-              <li>• 또는 화면 하단 버튼 사용</li>
+              <li>• 🕹️ 모바일: 화면 터치 후 드래그!</li>
+              <li>• ⌨️ 키보드: WASD 또는 화살표 키</li>
+              <li>• 🔘 또는 화면 하단 버튼 사용</li>
               <li>• 🚩 = 골인 지점</li>
               <li>• ⭐ 별을 많이 모으세요!</li>
             </ul>
@@ -433,10 +465,49 @@ export const MazeGame = () => {
               </div>
             </div>
             <div className="text-center text-sm text-gray-600 mt-4 space-y-1">
-              <div>💡 화면을 스와이프하세요!</div>
-              <div className="text-xs text-gray-500">또는 버튼 / 키보드 사용</div>
+              <div className="font-bold text-base">🕹️ 화면을 터치하고 드래그!</div>
+              <div className="text-xs text-gray-500">조이스틱처럼 원하는 방향으로 밀어주세요</div>
+              <div className="text-xs text-gray-400">또는 버튼 / 키보드 사용</div>
             </div>
           </div>
+        )}
+
+        {/* 가상 조이스틱 */}
+        {joystickActive && (
+          <>
+            {/* 조이스틱 베이스 */}
+            <div
+              className="fixed pointer-events-none z-50"
+              style={{
+                left: joystickBase.x - 60,
+                top: joystickBase.y - 60,
+                width: 120,
+                height: 120,
+              }}
+            >
+              <div className="w-full h-full rounded-full bg-gray-800/20 border-4 border-gray-600/40 flex items-center justify-center">
+                {/* 방향 표시 */}
+                <div className="text-gray-600/60 font-bold text-sm">
+                  {currentDirection === 'up' && '↑'}
+                  {currentDirection === 'down' && '↓'}
+                  {currentDirection === 'left' && '←'}
+                  {currentDirection === 'right' && '→'}
+                </div>
+              </div>
+            </div>
+            {/* 조이스틱 스틱 */}
+            <div
+              className="fixed pointer-events-none z-50"
+              style={{
+                left: joystickStick.x - 30,
+                top: joystickStick.y - 30,
+                width: 60,
+                height: 60,
+              }}
+            >
+              <div className="w-full h-full rounded-full bg-blue-500/80 border-4 border-blue-600 shadow-lg" />
+            </div>
+          </>
         )}
 
         {/* 완료 메시지 */}
