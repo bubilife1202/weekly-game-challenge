@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
 import { soundManager } from '../utils/sound';
@@ -28,6 +28,8 @@ export const Minesweeper = () => {
   const [flagMode, setFlagMode] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const [longPressActive, setLongPressActive] = useState(false);
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
@@ -135,6 +137,34 @@ export const Minesweeper = () => {
     [grid, gameStarted, gameOver]
   );
 
+  // 길게 누르기 시작 (모바일 깃발)
+  const handleTouchStart = useCallback(
+    (row: number, col: number) => {
+      if (!grid || !gameStarted || gameOver) return;
+
+      const cell = grid[row][col];
+      if (cell.isRevealed) return;
+
+      longPressTimerRef.current = setTimeout(() => {
+        setLongPressActive(true);
+        const newGrid = grid.map((r) => r.map((c) => ({ ...c })));
+        newGrid[row][col].isFlagged = !newGrid[row][col].isFlagged;
+        setGrid(newGrid);
+        soundManager.playClick();
+      }, 500); // 0.5초 길게 누르기
+    },
+    [grid, gameStarted, gameOver]
+  );
+
+  // 길게 누르기 취소
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setTimeout(() => setLongPressActive(false), 100);
+  }, []);
+
   // 게임 시간 계산
   const getElapsedTime = (): number => {
     if (!startTime) return 0;
@@ -216,10 +246,11 @@ export const Minesweeper = () => {
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-2">
             <div className="font-bold text-blue-900">🎮 조작법:</div>
             <ul className="text-sm text-blue-800 space-y-1 ml-4">
-              <li>• 왼쪽 클릭: 셀 열기</li>
-              <li>• 우클릭 또는 깃발 모드: 깃발 표시</li>
+              <li>• 클릭/탭: 셀 열기</li>
+              <li>• 우클릭 또는 🚩 버튼: 깃발 표시</li>
+              <li>• 모바일: 0.5초 길게 누르면 깃발!</li>
               <li>• 숫자 = 주변 지뢰 개수</li>
-              <li>• 모든 지뢰 찾기!</li>
+              <li>• 모든 지뢰 찾으면 승리!</li>
             </ul>
           </div>
         </div>
@@ -269,15 +300,15 @@ export const Minesweeper = () => {
             <div>
               <button
                 onClick={() => setFlagMode(!flagMode)}
-                className={`text-2xl font-bold px-4 py-2 rounded-lg transition-all ${
+                className={`text-3xl font-bold px-6 py-3 rounded-xl transition-all shadow-lg active:scale-95 ${
                   flagMode
-                    ? 'bg-red-500 text-white'
+                    ? 'bg-red-500 text-white animate-pulse'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 🚩
               </button>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className={`text-xs font-bold mt-1 ${flagMode ? 'text-red-600' : 'text-gray-600'}`}>
                 {flagMode ? '깃발 모드' : '공개 모드'}
               </div>
             </div>
@@ -296,11 +327,18 @@ export const Minesweeper = () => {
               row.map((cell, colIndex) => (
                 <button
                   key={`${rowIndex}-${colIndex}`}
-                  onClick={() => handleCellClick(rowIndex, colIndex)}
+                  onClick={() => {
+                    if (!longPressActive) {
+                      handleCellClick(rowIndex, colIndex);
+                    }
+                  }}
                   onContextMenu={(e) => handleCellRightClick(e, rowIndex, colIndex)}
+                  onTouchStart={() => handleTouchStart(rowIndex, colIndex)}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchCancel={handleTouchEnd}
                   disabled={gameOver}
                   className={`
-                    border border-gray-400 font-bold flex items-center justify-center
+                    border border-gray-400 font-bold flex items-center justify-center touch-manipulation
                     ${
                       cell.isRevealed
                         ? cell.isMine

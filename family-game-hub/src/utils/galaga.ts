@@ -31,13 +31,13 @@ export const GAME_CONFIG = {
   height: 600,
   playerWidth: 40,
   playerHeight: 40,
-  playerSpeed: 8,
-  bulletSpeed: 10,
+  playerSpeed: 5,
+  bulletSpeed: 7,
   bulletWidth: 4,
   bulletHeight: 15,
   enemyWidth: 30,
   enemyHeight: 30,
-  enemyBaseSpeed: 1,
+  enemyBaseSpeed: 0.5,
 };
 
 // 초기 상태 생성

@@ -178,6 +178,16 @@ export const Game2048 = () => {
               <br />
               더 이상 움직일 수 없으면 게임 오버!
             </p>
+            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mt-4">
+              <div className="font-bold text-yellow-900 mb-2">📖 게임 방법:</div>
+              <ul className="text-sm text-yellow-800 text-left space-y-1 ml-4">
+                <li>• 2 + 2 = 4, 4 + 4 = 8 같이 합쳐집니다</li>
+                <li>• 방향키나 스와이프로 타일을 밀어주세요</li>
+                <li>• 모든 타일이 같은 방향으로 이동합니다</li>
+                <li>• 새로운 타일(2 또는 4)이 계속 생성돼요</li>
+                <li>• 2048 타일을 만들면 승리!</li>
+              </ul>
+            </div>
           </div>
 
           <div className="space-y-4">
