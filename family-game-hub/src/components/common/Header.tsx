@@ -6,14 +6,19 @@ interface HeaderProps {
   title: string;
   showBack?: boolean;
   rightElement?: ReactNode;
+  onBack?: () => void;
 }
 
-export const Header = ({ title, showBack = false, rightElement }: HeaderProps) => {
+export const Header = ({ title, showBack = false, rightElement, onBack }: HeaderProps) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
     soundManager.playClick();
-    navigate(-1);
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
