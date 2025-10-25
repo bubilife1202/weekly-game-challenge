@@ -78,6 +78,23 @@ export const MemoryGame = () => {
     );
   }
 
+  // 카드가 아직 생성되지 않았으면 로딩 화면
+  if (difficulty && cards.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header title="🃏 카드 뒤집기" showBack />
+        <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
+          <div className="text-center space-y-4">
+            <div className="text-6xl animate-bounce">🃏</div>
+            <h2 className="text-2xl font-bold text-textDark">
+              카드를 섞는 중...
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 게임 초기화
   useEffect(() => {
     if (difficulty) {
@@ -198,23 +215,6 @@ export const MemoryGame = () => {
   const handleGoHome = () => {
     navigate('/');
   };
-
-  // 카드가 아직 생성되지 않았으면 로딩 화면
-  if (cards.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header title="🃏 카드 뒤집기" showBack />
-        <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
-          <div className="text-center space-y-4">
-            <div className="text-6xl animate-bounce">🃏</div>
-            <h2 className="text-2xl font-bold text-textDark">
-              카드를 섞는 중...
-            </h2>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const config = difficultyConfig[difficulty];
   const elapsedTime = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
