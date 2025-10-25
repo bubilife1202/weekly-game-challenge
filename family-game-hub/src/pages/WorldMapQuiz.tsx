@@ -359,14 +359,19 @@ export const WorldMapQuiz = () => {
         <div className="bg-white rounded-2xl p-8 shadow-lg text-center space-y-6">
           {quizMode === 'capital' && (
             <>
-              <h3 className="text-2xl font-bold text-textDark">{question.flag}</h3>
-              <p className="text-xl text-gray-600">{question.name}의 수도는?</p>
+              <div className="text-7xl mb-4" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' }}>
+                {question.flag}
+              </div>
+              <p className="text-2xl font-bold text-textDark">{question.name}의 수도는?</p>
             </>
           )}
           {quizMode === 'flag' && (
             <>
-              <div className="text-8xl">{question.flag}</div>
-              <p className="text-xl text-gray-600">이 국기는 어느 나라?</p>
+              <div className="text-9xl mb-4" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif' }}>
+                {question.flag}
+              </div>
+              <p className="text-2xl font-bold text-textDark mb-2">이 국기는 어느 나라?</p>
+              <p className="text-sm text-gray-500">힌트: {question.hint}</p>
             </>
           )}
           {quizMode === 'country' && (
