@@ -108,6 +108,38 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 세계 지도 퀴즈 */}
+          <Card onClick={() => navigate('/game/world-map')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🌍</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">세계 지도 퀴즈</h3>
+                    <p className="text-sm text-gray-600">나라와 수도를 배워요!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
+
+          {/* 영어 단어 외우기 */}
+          <Card onClick={() => navigate('/game/english-words')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🔤</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">영어 단어 외우기</h3>
+                    <p className="text-sm text-gray-600">학년별 영어 단어 학습!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 랭킹 */}
