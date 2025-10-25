@@ -140,6 +140,22 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 영어 문장 만들기 */}
+          <Card onClick={() => navigate('/game/english-sentences')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">📖</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">영어 문장 만들기</h3>
+                    <p className="text-sm text-gray-600">3가지 모드로 문장 학습!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 랭킹 */}
