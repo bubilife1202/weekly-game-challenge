@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
 import { soundManager } from '../utils/sound';
+import { speechManager } from '../utils/speech';
+import { Confetti } from '../components/effects/Confetti';
+import { Character } from '../components/character/Character';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
 
@@ -141,6 +144,20 @@ export const EnglishSentences = () => {
   // 빈칸/선택 모드
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
 
+  // 애니메이션 효과
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [characterState, setCharacterState] = useState<'idle' | 'happy' | 'sad' | 'thinking'>('idle');
+
+  // 카테고리별 배경 그라디언트
+  const categoryBackgrounds: Record<string, string> = {
+    greetings: 'from-yellow-100 to-orange-100',
+    daily: 'from-blue-100 to-cyan-100',
+    school: 'from-green-100 to-emerald-100',
+    family: 'from-pink-100 to-rose-100',
+    hobby: 'from-purple-100 to-violet-100',
+    food: 'from-red-100 to-orange-100',
+  };
+
   // 문제 생성
   useEffect(() => {
     if (selectedGrade && gameMode) {
@@ -190,15 +207,26 @@ export const EnglishSentences = () => {
       setStreak(streak + 1);
       setMaxStreak(Math.max(maxStreak, streak + 1));
       soundManager.playMatch();
+      setCharacterState('happy');
+      setShowConfetti(true);
+      // 정답 문장 음성으로 읽기
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 500);
     } else {
       setStreak(0);
       soundManager.playMismatch();
       setWrongSentences([...wrongSentences, sentence]);
+      setCharacterState('sad');
+      // 정답 문장 음성으로 읽기
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 1000);
     }
 
     setTimeout(() => {
       moveToNextQuestion(correct);
-    }, 2500);
+    }, 3000);
   };
 
   const handleFillBlankAnswer = (answer: string) => {
@@ -216,15 +244,24 @@ export const EnglishSentences = () => {
       setStreak(streak + 1);
       setMaxStreak(Math.max(maxStreak, streak + 1));
       soundManager.playMatch();
+      setCharacterState('happy');
+      setShowConfetti(true);
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 500);
     } else {
       setStreak(0);
       soundManager.playMismatch();
       setWrongSentences([...wrongSentences, sentence]);
+      setCharacterState('sad');
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 1000);
     }
 
     setTimeout(() => {
       moveToNextQuestion(correct);
-    }, 2000);
+    }, 3000);
   };
 
   const handleChooseAnswer = (answer: string) => {
@@ -242,15 +279,24 @@ export const EnglishSentences = () => {
       setStreak(streak + 1);
       setMaxStreak(Math.max(maxStreak, streak + 1));
       soundManager.playMatch();
+      setCharacterState('happy');
+      setShowConfetti(true);
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 500);
     } else {
       setStreak(0);
       soundManager.playMismatch();
       setWrongSentences([...wrongSentences, sentence]);
+      setCharacterState('sad');
+      setTimeout(() => {
+        speechManager.speak(sentence.sentence);
+      }, 1000);
     }
 
     setTimeout(() => {
       moveToNextQuestion(correct);
-    }, 2000);
+    }, 3000);
   };
 
   const getChooseOptions = () => {
@@ -289,6 +335,8 @@ export const EnglishSentences = () => {
       setIsCorrect(false);
       setSelectedChoice(null);
       setOrderedWords([]);
+      setShowConfetti(false);
+      setCharacterState('idle');
     }
   };
 
@@ -464,9 +512,11 @@ export const EnglishSentences = () => {
   if (questions.length === 0) return null;
 
   const sentence = questions[currentQuestion];
+  const currentBackground = categoryBackgrounds[sentence.category] || 'from-gray-100 to-white';
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className={`min-h-screen bg-gradient-to-b ${currentBackground} pb-20 transition-all duration-700`}>
+      <Confetti show={showConfetti} />
       <Header title={`📖 ${modeEmojis[gameMode]} ${modeNames[gameMode]}`} showBack />
 
       <div className="max-w-4xl mx-auto p-4 space-y-4">
@@ -489,6 +539,9 @@ export const EnglishSentences = () => {
           </div>
         </div>
 
+        {/* 캐릭터 */}
+        {!showAnswer && <Character state={characterState} size="medium" />}
+
         {/* 순서 맞추기 모드 */}
         {gameMode === 'ordering' && (
           <>
@@ -498,6 +551,13 @@ export const EnglishSentences = () => {
               </div>
               <p className="text-2xl font-bold text-textDark">{sentence.korean}</p>
               <p className="text-lg text-gray-600">단어를 눌러 순서대로 배열하세요!</p>
+              {/* 따라 읽기 버튼 */}
+              <button
+                onClick={() => speechManager.speak(sentence.korean, 'ko-KR')}
+                className="bg-secondary/20 hover:bg-secondary/30 text-secondary px-4 py-2 rounded-lg font-bold transition-all active:scale-95"
+              >
+                🔊 한글 듣기
+              </button>
             </div>
 
             {/* 배열된 단어 */}
@@ -565,6 +625,13 @@ export const EnglishSentences = () => {
                 ))}
               </div>
               <p className="text-lg text-gray-600">빈칸에 들어갈 단어는?</p>
+              {/* 따라 읽기 버튼 */}
+              <button
+                onClick={() => speechManager.speak(sentence.korean, 'ko-KR')}
+                className="bg-secondary/20 hover:bg-secondary/30 text-secondary px-4 py-2 rounded-lg font-bold transition-all active:scale-95"
+              >
+                🔊 한글 듣기
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -603,6 +670,13 @@ export const EnglishSentences = () => {
               </div>
               <p className="text-2xl font-bold text-primary">{sentence.situation}</p>
               <p className="text-lg text-gray-600">이 상황에 맞는 영어 문장은?</p>
+              {/* 따라 읽기 버튼 */}
+              <button
+                onClick={() => speechManager.speak(sentence.korean, 'ko-KR')}
+                className="bg-secondary/20 hover:bg-secondary/30 text-secondary px-4 py-2 rounded-lg font-bold transition-all active:scale-95"
+              >
+                🔊 한글 듣기
+              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
@@ -634,24 +708,34 @@ export const EnglishSentences = () => {
 
         {/* 정답/오답 표시 */}
         {showAnswer && (
-          <div className={`${isCorrect ? 'bg-success' : 'bg-primary'} rounded-2xl p-6 text-center text-white space-y-3 animate-bounce`}>
-            <div className="text-5xl">{isCorrect ? '✓' : '✗'}</div>
-            <div className="text-2xl font-bold">
-              {isCorrect ? (
-                streak >= 5 ? '🔥 완벽해요!' : '정답입니다!'
-              ) : (
-                '아쉬워요!'
-              )}
-            </div>
-            {!isCorrect && (
-              <div className="text-xl">
-                정답: <span className="font-bold">{sentence.sentence}</span>
+          <>
+            <Character state={characterState} size="large" />
+            <div className={`${isCorrect ? 'bg-success' : 'bg-primary'} rounded-2xl p-6 text-center text-white space-y-3`}>
+              <div className="text-5xl">{isCorrect ? '✓' : '✗'}</div>
+              <div className="text-2xl font-bold">
+                {isCorrect ? (
+                  streak >= 5 ? '🔥 완벽해요!' : '정답입니다!'
+                ) : (
+                  '아쉬워요!'
+                )}
               </div>
-            )}
-            <div className="text-lg opacity-90">
-              {sentence.emoji} {sentence.korean}
+              {!isCorrect && (
+                <div className="text-xl">
+                  정답: <span className="font-bold">{sentence.sentence}</span>
+                </div>
+              )}
+              <div className="text-lg opacity-90">
+                {sentence.emoji} {sentence.korean}
+              </div>
+              {/* 따라 읽기 버튼 */}
+              <button
+                onClick={() => speechManager.speak(sentence.sentence)}
+                className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-lg font-bold transition-all active:scale-95 mt-2"
+              >
+                🔊 영어로 따라 읽기
+              </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
