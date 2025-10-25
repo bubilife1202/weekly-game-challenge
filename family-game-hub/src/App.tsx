@@ -7,6 +7,10 @@ import { EnglishWords } from './pages/EnglishWords';
 import { EnglishSentences } from './pages/EnglishSentences';
 import { Sudoku } from './pages/Sudoku';
 import { MazeGame } from './pages/MazeGame';
+import { SnakeGame } from './pages/SnakeGame';
+import { Game2048 } from './pages/Game2048';
+import { Minesweeper } from './pages/Minesweeper';
+import { Galaga } from './pages/Galaga';
 import { Profiles } from './pages/Profiles';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/settingsStore';
@@ -32,6 +36,10 @@ function App() {
         <Route path="/game/english-sentences" element={<EnglishSentences />} />
         <Route path="/game/sudoku" element={<Sudoku />} />
         <Route path="/game/maze" element={<MazeGame />} />
+        <Route path="/game/snake" element={<SnakeGame />} />
+        <Route path="/game/2048" element={<Game2048 />} />
+        <Route path="/game/minesweeper" element={<Minesweeper />} />
+        <Route path="/game/galaga" element={<Galaga />} />
         <Route path="/profiles" element={<Profiles />} />
       </Routes>
     </BrowserRouter>

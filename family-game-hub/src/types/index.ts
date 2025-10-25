@@ -22,7 +22,7 @@ export interface Card {
 // 게임 기록
 export interface GameRecord {
   profileId: string;
-  gameType: 'memory' | 'sudoku' | 'maze';
+  gameType: 'memory' | 'sudoku' | 'maze' | 'snake' | '2048' | 'minesweeper' | 'galaga';
   difficulty: Difficulty;
   score: number;
   time: number; // 초 단위

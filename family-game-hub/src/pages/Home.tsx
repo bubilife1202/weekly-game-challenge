@@ -188,6 +188,70 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* Snake 게임 */}
+          <Card onClick={() => navigate('/game/snake')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🐍</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">Snake 게임</h3>
+                    <p className="text-sm text-gray-600">먹고 길어지기!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
+
+          {/* 2048 */}
+          <Card onClick={() => navigate('/game/2048')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🔢</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">2048</h3>
+                    <p className="text-sm text-gray-600">합쳐서 2048 만들기!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
+
+          {/* 지뢰찾기 */}
+          <Card onClick={() => navigate('/game/minesweeper')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">💣</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">지뢰찾기</h3>
+                    <p className="text-sm text-gray-600">논리로 지뢰 찾기!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
+
+          {/* 갤러그 */}
+          <Card onClick={() => navigate('/game/galaga')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🚀</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">갤러그</h3>
+                    <p className="text-sm text-gray-600">우주 슈팅 게임!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 랭킹 */}
