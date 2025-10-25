@@ -36,6 +36,47 @@ export const MemoryGame = () => {
     };
   }, []);
 
+  // 게임 초기화 - 난이도가 선택되면 카드 생성
+  useEffect(() => {
+    if (difficulty) {
+      const config = difficultyConfig[difficulty];
+      const newCards = generateCards(config.pairs);
+      setCards(newCards);
+      setStartTime(Date.now());
+    }
+  }, [difficulty]);
+
+  // 게임 완료 체크
+  useEffect(() => {
+    if (difficulty && matchedPairs === difficultyConfig[difficulty].pairs) {
+      const endTimeValue = Date.now();
+      setEndTime(endTimeValue);
+      soundManager.playComplete();
+
+      // 게임 기록 저장
+      if (currentProfileId && startTime) {
+        const time = Math.floor((endTimeValue - startTime) / 1000);
+        const accuracy = calculateAccuracy(matchedPairs, attempts);
+
+        const record = {
+          profileId: currentProfileId,
+          gameType: 'memory' as const,
+          difficulty,
+          score: matchedPairs,
+          time,
+          attempts,
+          accuracy,
+          completedAt: endTimeValue,
+        };
+
+        addRecord(record);
+      }
+
+      const resultTimeout = setTimeout(() => setShowResult(true), 500);
+      return () => clearTimeout(resultTimeout);
+    }
+  }, [matchedPairs, difficulty, currentProfileId, startTime, attempts, addRecord]);
+
   // 난이도 선택 화면
   if (!difficulty) {
     return (
@@ -94,16 +135,6 @@ export const MemoryGame = () => {
       </div>
     );
   }
-
-  // 게임 초기화
-  useEffect(() => {
-    if (difficulty) {
-      const config = difficultyConfig[difficulty];
-      const newCards = generateCards(config.pairs);
-      setCards(newCards);
-      setStartTime(Date.now());
-    }
-  }, [difficulty]);
 
   // 카드 클릭 핸들러
   const handleCardClick = (cardId: string) => {
@@ -165,37 +196,6 @@ export const MemoryGame = () => {
       }
     }
   };
-
-  // 게임 완료 체크
-  useEffect(() => {
-    if (difficulty && matchedPairs === difficultyConfig[difficulty].pairs) {
-      const endTimeValue = Date.now();
-      setEndTime(endTimeValue);
-      soundManager.playComplete();
-
-      // 게임 기록 저장
-      if (currentProfileId && startTime) {
-        const time = Math.floor((endTimeValue - startTime) / 1000);
-        const accuracy = calculateAccuracy(matchedPairs, attempts);
-
-        const record = {
-          profileId: currentProfileId,
-          gameType: 'memory' as const,
-          difficulty,
-          score: matchedPairs,
-          time,
-          attempts,
-          accuracy,
-          completedAt: endTimeValue,
-        };
-
-        addRecord(record);
-      }
-
-      const resultTimeout = setTimeout(() => setShowResult(true), 500);
-      return () => clearTimeout(resultTimeout);
-    }
-  }, [matchedPairs, difficulty, currentProfileId, startTime, attempts, addRecord]);
 
   const handlePlayAgain = () => {
     if (difficulty) {
