@@ -22,12 +22,12 @@ export interface Card {
 // 게임 기록
 export interface GameRecord {
   profileId: string;
-  gameType: 'memory';
+  gameType: 'memory' | 'sudoku';
   difficulty: Difficulty;
   score: number;
   time: number; // 초 단위
-  attempts: number;
-  accuracy: number; // 퍼센트
+  attempts?: number;
+  accuracy?: number; // 퍼센트
   completedAt: number;
 }
 

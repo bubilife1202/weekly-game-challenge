@@ -5,6 +5,7 @@ import { ColoringGame } from './pages/ColoringGame';
 import { WorldMapQuiz } from './pages/WorldMapQuiz';
 import { EnglishWords } from './pages/EnglishWords';
 import { EnglishSentences } from './pages/EnglishSentences';
+import { Sudoku } from './pages/Sudoku';
 import { Profiles } from './pages/Profiles';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/settingsStore';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/game/world-map" element={<WorldMapQuiz />} />
         <Route path="/game/english-words" element={<EnglishWords />} />
         <Route path="/game/english-sentences" element={<EnglishSentences />} />
+        <Route path="/game/sudoku" element={<Sudoku />} />
         <Route path="/profiles" element={<Profiles />} />
       </Routes>
     </BrowserRouter>

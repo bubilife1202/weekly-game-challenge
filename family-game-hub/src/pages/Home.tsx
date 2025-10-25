@@ -156,6 +156,22 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 스도쿠 */}
+          <Card onClick={() => navigate('/game/sudoku')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🧩</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">스도쿠</h3>
+                    <p className="text-sm text-gray-600">논리적 사고력 향상!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 랭킹 */}
