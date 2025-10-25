@@ -183,9 +183,7 @@ export const EnglishSentences = () => {
       }, 1000);
     }
 
-    setTimeout(() => {
-      moveToNextQuestion(correct);
-    }, 3000);
+    // 자동 전환 제거 - 사용자가 "다음" 버튼을 눌러야 넘어감
   };
 
   const getChooseOptions = () => {
@@ -727,6 +725,15 @@ export const EnglishSentences = () => {
                 🔊 영어로 따라 읽기
               </button>
             </div>
+
+            {/* 다음 문제 버튼 */}
+            <Button
+              variant="primary"
+              onClick={() => moveToNextQuestion(isCorrect)}
+              fullWidth
+            >
+              {currentQuestion + 1 >= questions.length ? '✓ 완료' : '➡️ 다음 문제'}
+            </Button>
           </>
         )}
       </div>
