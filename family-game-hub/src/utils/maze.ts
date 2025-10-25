@@ -202,7 +202,7 @@ export const getNextPosition = (
 
 // 미로 크기 프리셋
 export const MAZE_SIZES = {
-  easy: { rows: 8, cols: 8, name: '쉬움' },
-  medium: { rows: 12, cols: 12, name: '보통' },
-  hard: { rows: 16, cols: 16, name: '어려움' },
+  easy: { rows: 12, cols: 12, name: '쉬움' },
+  medium: { rows: 18, cols: 18, name: '보통' },
+  hard: { rows: 25, cols: 25, name: '어려움' },
 };

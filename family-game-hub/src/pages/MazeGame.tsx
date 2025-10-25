@@ -155,6 +155,66 @@ export const MazeGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [movePlayer, isRunning, isComplete]);
 
+  // 터치/스와이프 컨트롤
+  useEffect(() => {
+    if (!isRunning || isComplete) return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    const minSwipeDistance = 30; // 최소 스와이프 거리
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    };
+
+    const handleSwipe = () => {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+
+      // 스와이프 거리가 충분한지 확인
+      if (absDeltaX < minSwipeDistance && absDeltaY < minSwipeDistance) {
+        return;
+      }
+
+      // 가로/세로 중 더 큰 이동 방향으로 처리
+      if (absDeltaX > absDeltaY) {
+        // 가로 스와이프
+        if (deltaX > 0) {
+          movePlayer('right');
+        } else {
+          movePlayer('left');
+        }
+      } else {
+        // 세로 스와이프
+        if (deltaY > 0) {
+          movePlayer('down');
+        } else {
+          movePlayer('up');
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [movePlayer, isRunning, isComplete]);
+
   // 타이머 포맷
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -193,8 +253,8 @@ export const MazeGame = () => {
                   <div className="text-2xl font-bold text-green-600 mb-2">
                     🌟 쉬움
                   </div>
-                  <div className="text-sm text-gray-600">작은 미로</div>
-                  <div className="text-xs text-gray-500 mt-1">8×8 미로</div>
+                  <div className="text-sm text-gray-600">초보자용 미로</div>
+                  <div className="text-xs text-gray-500 mt-1">12×12 미로</div>
                 </div>
                 <div className="text-4xl">→</div>
               </div>
@@ -209,8 +269,8 @@ export const MazeGame = () => {
                   <div className="text-2xl font-bold text-yellow-600 mb-2">
                     ⭐ 보통
                   </div>
-                  <div className="text-sm text-gray-600">중간 크기 미로</div>
-                  <div className="text-xs text-gray-500 mt-1">12×12 미로</div>
+                  <div className="text-sm text-gray-600">도전적인 미로</div>
+                  <div className="text-xs text-gray-500 mt-1">18×18 미로</div>
                 </div>
                 <div className="text-4xl">→</div>
               </div>
@@ -225,8 +285,8 @@ export const MazeGame = () => {
                   <div className="text-2xl font-bold text-red-600 mb-2">
                     ✨ 어려움
                   </div>
-                  <div className="text-sm text-gray-600">큰 미로</div>
-                  <div className="text-xs text-gray-500 mt-1">16×16 미로</div>
+                  <div className="text-sm text-gray-600">거대한 미로!</div>
+                  <div className="text-xs text-gray-500 mt-1">25×25 미로</div>
                 </div>
                 <div className="text-4xl">→</div>
               </div>
@@ -237,8 +297,9 @@ export const MazeGame = () => {
             <div className="font-bold text-blue-900">🎮 조작법:</div>
             <ul className="text-sm text-blue-800 space-y-1 ml-4">
               <li>• 키보드: WASD 또는 화살표 키</li>
-              <li>• 터치: 화면 하단 버튼</li>
-              <li>• 🚩 빨간색 = 골인 지점</li>
+              <li>• 모바일: 화면을 스와이프하세요!</li>
+              <li>• 또는 화면 하단 버튼 사용</li>
+              <li>• 🚩 = 골인 지점</li>
               <li>• ⭐ 별을 많이 모으세요!</li>
             </ul>
           </div>
@@ -249,7 +310,10 @@ export const MazeGame = () => {
 
   // 게임 화면
   const size = MAZE_SIZES[difficulty];
-  const cellSize = Math.min(400 / size.cols, 400 / size.rows);
+  // 모바일 친화적 셀 크기 (화면 너비의 90%를 사용, 최대 600px)
+  const maxMazeSize = Math.min(window.innerWidth * 0.9, 600);
+  const cellSize = Math.floor(maxMazeSize / Math.max(size.cols, size.rows));
+  const emojiSize = Math.max(Math.floor(cellSize * 0.6), 8);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pb-6">
@@ -292,9 +356,9 @@ export const MazeGame = () => {
         </div>
 
         {/* 미로 */}
-        <div className="bg-white rounded-xl p-4 shadow-lg flex justify-center items-center overflow-auto">
+        <div className="bg-white rounded-xl p-2 sm:p-4 shadow-lg flex justify-center items-center overflow-auto touch-pan-y">
           <div
-            className="relative bg-gray-800"
+            className="relative bg-gray-800 touch-none"
             style={{
               width: cellSize * size.cols,
               height: cellSize * size.rows,
@@ -322,7 +386,10 @@ export const MazeGame = () => {
                     }}
                   >
                     {/* 내용 */}
-                    <div className="w-full h-full flex items-center justify-center text-xl">
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ fontSize: `${emojiSize}px` }}
+                    >
                       {isPlayer && '🧑'}
                       {!isPlayer && isGoal && '🚩'}
                       {!isPlayer && !isGoal && cell.hasStar && '⭐'}
@@ -336,37 +403,38 @@ export const MazeGame = () => {
 
         {/* 컨트롤 */}
         {!isComplete && (
-          <div className="bg-white rounded-xl p-4 shadow-md">
-            <div className="flex flex-col items-center gap-2">
+          <div className="bg-white rounded-xl p-6 shadow-md">
+            <div className="flex flex-col items-center gap-4">
               <button
                 onClick={() => movePlayer('up')}
-                className="bg-blue-500 text-white font-bold text-2xl w-16 h-16 rounded-lg hover:bg-blue-600 active:scale-95 transition-all shadow-md"
+                className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:scale-95 active:bg-blue-700 transition-all shadow-lg touch-manipulation"
               >
                 ↑
               </button>
-              <div className="flex gap-2">
+              <div className="flex gap-4">
                 <button
                   onClick={() => movePlayer('left')}
-                  className="bg-blue-500 text-white font-bold text-2xl w-16 h-16 rounded-lg hover:bg-blue-600 active:scale-95 transition-all shadow-md"
+                  className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:scale-95 active:bg-blue-700 transition-all shadow-lg touch-manipulation"
                 >
                   ←
                 </button>
                 <button
                   onClick={() => movePlayer('down')}
-                  className="bg-blue-500 text-white font-bold text-2xl w-16 h-16 rounded-lg hover:bg-blue-600 active:scale-95 transition-all shadow-md"
+                  className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:scale-95 active:bg-blue-700 transition-all shadow-lg touch-manipulation"
                 >
                   ↓
                 </button>
                 <button
                   onClick={() => movePlayer('right')}
-                  className="bg-blue-500 text-white font-bold text-2xl w-16 h-16 rounded-lg hover:bg-blue-600 active:scale-95 transition-all shadow-md"
+                  className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:scale-95 active:bg-blue-700 transition-all shadow-lg touch-manipulation"
                 >
                   →
                 </button>
               </div>
             </div>
-            <div className="text-center text-xs text-gray-500 mt-2">
-              키보드: WASD 또는 화살표 키
+            <div className="text-center text-sm text-gray-600 mt-4 space-y-1">
+              <div>💡 화면을 스와이프하세요!</div>
+              <div className="text-xs text-gray-500">또는 버튼 / 키보드 사용</div>
             </div>
           </div>
         )}
