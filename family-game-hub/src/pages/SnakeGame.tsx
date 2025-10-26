@@ -372,7 +372,7 @@ export const SnakeGame = () => {
         {/* 게임 보드 */}
         <div className="bg-white rounded-xl p-4 shadow-lg flex justify-center items-center">
           <div
-            className="relative bg-gray-100 border-4 border-gray-800 rounded-lg"
+            className="relative bg-gray-100 border-4 border-gray-800 rounded-lg touch-none"
             style={{
               width: cellSize * gridSize,
               height: cellSize * gridSize,
@@ -420,15 +420,24 @@ export const SnakeGame = () => {
 
         {/* 컨트롤 버튼 */}
         {!gameState.gameOver && (
-          <div className="flex gap-3">
-            <Button
-              variant={isPaused ? 'primary' : 'secondary'}
-              onClick={() => setIsPaused(!isPaused)}
-              fullWidth
-            >
-              {isPaused ? '▶️ 계속' : '⏸️ 일시정지'}
-            </Button>
-          </div>
+          <>
+            <div className="flex gap-3">
+              <Button
+                variant={isPaused ? 'primary' : 'secondary'}
+                onClick={() => setIsPaused(!isPaused)}
+                fullWidth
+              >
+                {isPaused ? '▶️ 계속' : '⏸️ 일시정지'}
+              </Button>
+            </div>
+
+            {/* 모바일 조이스틱 안내 */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3 text-center md:hidden">
+              <div className="text-sm text-blue-800">
+                🕹️ <span className="font-bold">화면을 터치하고 드래그</span>하여 방향 조작
+              </div>
+            </div>
+          </>
         )}
 
         {/* 가상 조이스틱 */}
