@@ -261,7 +261,9 @@ export const Game2048 = () => {
 
   // 게임 화면
   const gridSize = GRID_SIZES[difficulty];
-  const cellSize = Math.min(400 / gridSize, 100);
+  // 모바일 반응형: 화면 너비의 90% 또는 최대 400px
+  const maxWidth = Math.min(window.innerWidth - 64, 400);
+  const cellSize = Math.floor(maxWidth / gridSize);
   const maxTile = getMaxTile(grid);
 
   return (
