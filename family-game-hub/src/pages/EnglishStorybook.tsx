@@ -4,7 +4,6 @@ import { Button } from '../components/common/Button';
 import { speechManager } from '../utils/speech';
 import { getBooksByLevel, type Storybook } from '../data/storybooks';
 import { useLearningStore } from '../store/learningStore';
-import { useVoiceSettingsStore } from '../store/voiceSettingsStore';
 
 interface EnglishStorybookProps {
   onBack: () => void;
@@ -15,19 +14,32 @@ export const EnglishStorybook = ({ onBack }: EnglishStorybookProps) => {
   const [selectedBook, setSelectedBook] = useState<Storybook | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [isReading, setIsReading] = useState(false); // 읽고 있는 중인지 표시
 
   const { booksRead, updateBookProgress, markBookCompleted, getBookProgress } = useLearningStore();
-  const { autoPlay } = useVoiceSettingsStore();
 
-  // 자동 재생
+  // 자동 재생 (페이지 넘어갈 때 자동으로 읽어주기)
   useEffect(() => {
-    if (autoPlay && selectedBook && !showTranslation) {
+    if (selectedBook) {
       const page = selectedBook.pages[currentPage];
-      setTimeout(() => {
-        speechManager.speak(page.text);
-      }, 300);
+      setIsReading(true);
+
+      const timer = setTimeout(() => {
+        if (showTranslation) {
+          speechManager.speak(page.korean, 'ko-KR');
+        } else {
+          speechManager.speak(page.text);
+        }
+        // 읽기 완료 후 표시 변경
+        setTimeout(() => setIsReading(false), 3000);
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        speechManager.stop();
+      };
     }
-  }, [currentPage, selectedBook, autoPlay, showTranslation]);
+  }, [currentPage, selectedBook, showTranslation]);
 
   const handleNextPage = () => {
     if (!selectedBook) return;
@@ -243,15 +255,23 @@ export const EnglishStorybook = ({ onBack }: EnglishStorybookProps) => {
           <div className="flex-1 flex flex-col justify-center space-y-6">
             {!showTranslation ? (
               // 영어 텍스트
-              <div>
-                <p className="text-2xl font-bold text-textDark leading-relaxed text-center">
+              <div className="relative">
+                <p className={`text-2xl font-bold text-textDark leading-relaxed text-center transition-all ${isReading ? 'scale-105 text-blue-600' : ''}`}>
                   {currentPageData.text}
                 </p>
+                {isReading && (
+                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-bold animate-pulse flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 bg-white rounded-full animate-ping"></span>
+                      읽는 중...
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               // 한글 번역
               <div className="space-y-4">
-                <p className="text-xl text-gray-600 text-center">
+                <p className={`text-xl text-gray-600 text-center transition-all ${isReading ? 'scale-105 text-blue-600 font-bold' : ''}`}>
                   {currentPageData.korean}
                 </p>
                 <div className="border-t-2 border-gray-200 pt-4">
@@ -259,17 +279,27 @@ export const EnglishStorybook = ({ onBack }: EnglishStorybookProps) => {
                     {currentPageData.text}
                   </p>
                 </div>
+                {isReading && (
+                  <div className="flex justify-center">
+                    <div className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-bold animate-pulse flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 bg-white rounded-full animate-ping"></span>
+                      읽는 중...
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 음성 버튼 */}
-            <div className="flex justify-center">
+            {/* 음성 버튼 - 항상 표시 */}
+            <div className="flex flex-col gap-3 items-center">
               <button
                 onClick={handleSpeak}
-                className="bg-blue-500 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-blue-600 active:scale-95 transition-all"
+                className={`text-white px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 ${isReading ? 'bg-orange-500 animate-pulse' : 'bg-blue-500 hover:bg-blue-600'}`}
               >
-                🔊 {showTranslation ? '한글로 듣기' : '영어로 듣기'}
+                <span className="text-2xl">🔊</span>
+                <span>{isReading ? '읽는 중...' : showTranslation ? '한글로 다시 듣기' : '영어로 다시 듣기'}</span>
               </button>
+              <p className="text-sm text-gray-500">페이지를 넘기면 자동으로 읽어드려요!</p>
             </div>
           </div>
         </div>
