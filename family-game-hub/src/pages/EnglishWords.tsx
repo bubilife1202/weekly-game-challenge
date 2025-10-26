@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
@@ -326,7 +326,9 @@ export const EnglishWords = () => {
     }
   };
 
-  const getChoiceOptions = () => {
+  // 선택지를 현재 문제마다 한 번만 생성 (useMemo로 캐싱)
+  const choiceOptions = useMemo(() => {
+    if (questions.length === 0 || gameMode !== 'choice') return [];
     const question = questions[currentQuestion];
     const otherWords = allWords
       .filter(w => w.korean !== question.korean)
@@ -335,9 +337,10 @@ export const EnglishWords = () => {
     const options = [question.korean, ...otherWords.map(w => w.korean)]
       .sort(() => Math.random() - 0.5);
     return options;
-  };
+  }, [currentQuestion, questions, gameMode]);
 
-  const getListeningOptions = () => {
+  const listeningOptions = useMemo(() => {
+    if (questions.length === 0 || gameMode !== 'listening') return [];
     const question = questions[currentQuestion];
     const otherWords = allWords
       .filter(w => w.word !== question.word)
@@ -346,7 +349,7 @@ export const EnglishWords = () => {
     const options = [question.word, ...otherWords.map(w => w.word)]
       .sort(() => Math.random() - 0.5);
     return options;
-  };
+  }, [currentQuestion, questions, gameMode]);
 
   const handlePlayAgain = () => {
     setCurrentQuestion(0);
@@ -566,7 +569,7 @@ export const EnglishWords = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              {getChoiceOptions().map((option, index) => {
+              {choiceOptions.map((option, index) => {
                 const isSelected = selectedChoice === option;
                 const isAnswer = option === question.korean;
 
@@ -650,7 +653,7 @@ export const EnglishWords = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {getListeningOptions().map((option, index) => {
+              {listeningOptions.map((option, index) => {
                 const isSelected = selectedChoice === option;
                 const isAnswer = option === question.word;
 
