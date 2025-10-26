@@ -11,6 +11,7 @@ import { SnakeGame } from './pages/SnakeGame';
 import { Game2048 } from './pages/Game2048';
 import { Minesweeper } from './pages/Minesweeper';
 import { Galaga } from './pages/Galaga';
+import { Breakout } from './pages/Breakout';
 import { Profiles } from './pages/Profiles';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/settingsStore';
@@ -40,6 +41,7 @@ function App() {
         <Route path="/game/2048" element={<Game2048 />} />
         <Route path="/game/minesweeper" element={<Minesweeper />} />
         <Route path="/game/galaga" element={<Galaga />} />
+        <Route path="/game/breakout" element={<Breakout />} />
         <Route path="/profiles" element={<Profiles />} />
       </Routes>
     </BrowserRouter>

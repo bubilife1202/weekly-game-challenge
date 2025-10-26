@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
+import { AdSense } from '../components/common/AdSense';
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -252,7 +253,26 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 벽돌깨기 */}
+          <Card onClick={() => navigate('/game/breakout')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🧱</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">벽돌깨기</h3>
+                    <p className="text-sm text-gray-600">패들로 공을 튕겨요!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
+
+        {/* 광고 영역 */}
+        <AdSense className="my-6" />
 
         {/* 주간 랭킹 */}
         {ranking.length > 0 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
+import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   createInitialGrid,
@@ -260,7 +261,9 @@ export const Game2048 = () => {
 
   // 게임 화면
   const gridSize = GRID_SIZES[difficulty];
-  const cellSize = Math.min(400 / gridSize, 100);
+  // 모바일 반응형: 화면 너비의 90% 또는 최대 400px
+  const maxWidth = Math.min(window.innerWidth - 64, 400);
+  const cellSize = Math.floor(maxWidth / gridSize);
   const maxTile = getMaxTile(grid);
 
   return (
@@ -364,41 +367,46 @@ export const Game2048 = () => {
 
         {/* 게임 오버 메시지 */}
         {gameOver && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
-            <div className="text-6xl">😢</div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-textDark">Game Over!</h2>
-              <div className="text-lg text-gray-700">
-                <div>점수: {score}</div>
-                <div>최고 타일: {maxTile}</div>
-                <div>이동: {moves}회</div>
-                {maxTile >= 2048 && (
-                  <div className="mt-2 text-2xl font-bold text-yellow-600">
-                    🎉 2048 달성! 축하합니다!
-                  </div>
-                )}
+          <>
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
+              <div className="text-6xl">😢</div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-textDark">Game Over!</h2>
+                <div className="text-lg text-gray-700">
+                  <div>점수: {score}</div>
+                  <div>최고 타일: {maxTile}</div>
+                  <div>이동: {moves}회</div>
+                  {maxTile >= 2048 && (
+                    <div className="mt-2 text-2xl font-bold text-yellow-600">
+                      🎉 2048 달성! 축하합니다!
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => startGame(difficulty)}
+                  fullWidth
+                >
+                  🔄 다시 하기
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDifficulty(null);
+                    setGrid(null);
+                  }}
+                  fullWidth
+                >
+                  📋 난이도 선택
+                </Button>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => startGame(difficulty)}
-                fullWidth
-              >
-                🔄 다시 하기
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setDifficulty(null);
-                  setGrid(null);
-                }}
-                fullWidth
-              >
-                📋 난이도 선택
-              </Button>
-            </div>
-          </div>
+
+            {/* 게임 오버 후 광고 */}
+            <AdSense className="my-4" />
+          </>
         )}
       </div>
 
