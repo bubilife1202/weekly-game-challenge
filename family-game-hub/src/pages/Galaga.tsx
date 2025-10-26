@@ -22,12 +22,38 @@ export const Galaga = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
-  const [autoFire, setAutoFire] = useState(false);
+  const [autoFire, setAutoFire] = useState(true); // 모바일 기본값 true
   const keysPressed = useRef<Set<string>>(new Set());
   const touchStartX = useRef<number>(0);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+  const [gameSize, setGameSize] = useState({ width: 400, height: 600 });
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
+
+  // 게임 크기를 화면에 맞게 조정
+  useEffect(() => {
+    const updateSize = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      // 모바일 화면에 맞게 크기 조정
+      const maxWidth = Math.min(screenWidth - 32, 400);
+      const maxHeight = Math.min(screenHeight - 400, 600); // 상태표시, 컨트롤 공간 확보
+
+      // 비율 유지하면서 크기 조정
+      const scale = Math.min(maxWidth / 400, maxHeight / 600);
+
+      setGameSize({
+        width: 400 * scale,
+        height: 600 * scale,
+      });
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   // 게임 시작
   const startGame = useCallback(() => {
@@ -156,29 +182,35 @@ export const Galaga = () => {
     };
   }, [gameState, isPaused, autoFire]);
 
-  // 터치 드래그 컨트롤
+  // 터치 드래그 컨트롤 - 개선된 버전
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!gameState || gameState.gameOver || isPaused) return;
+    e.preventDefault();
     const touch = e.touches[0];
     touchStartX.current = touch.clientX;
   }, [gameState, isPaused]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!gameState || gameState.gameOver || isPaused) return;
+    e.preventDefault();
     const touch = e.touches[0];
     const rect = e.currentTarget.getBoundingClientRect();
     const relativeX = touch.clientX - rect.left;
+
+    // 화면 비율에 맞게 조정
+    const scale = gameSize.width / GAME_CONFIG.width;
+    const gameX = relativeX / scale;
 
     // 터치 위치로 플레이어 이동
     setGameState((prev) => {
       if (!prev) return prev;
       const newX = Math.max(
         GAME_CONFIG.playerWidth / 2,
-        Math.min(GAME_CONFIG.width - GAME_CONFIG.playerWidth / 2, relativeX)
+        Math.min(GAME_CONFIG.width - GAME_CONFIG.playerWidth / 2, gameX)
       );
       return { ...prev, playerX: newX };
     });
-  }, [gameState, isPaused]);
+  }, [gameState, isPaused, gameSize]);
 
   // 시작 화면
   if (showInstructions) {
@@ -199,24 +231,23 @@ export const Galaga = () => {
 
           <div className="bg-white/10 backdrop-blur-lg border-2 border-white/20 rounded-xl p-6 space-y-4">
             <div className="font-bold text-white text-xl">🎮 조작법</div>
-            <div className="text-white space-y-2">
+            <div className="text-white space-y-3">
+              <div className="bg-blue-500/20 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">📱</span>
+                  <div className="flex-1">
+                    <div className="font-bold text-lg">모바일 (추천!)</div>
+                    <div className="text-sm text-gray-300">✨ 게임판을 좌우로 드래그</div>
+                    <div className="text-sm text-green-300">✅ 자동 발사 기본 ON</div>
+                  </div>
+                </div>
+              </div>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">⌨️</span>
                 <div>
                   <div className="font-bold">키보드</div>
-                  <div className="text-sm text-gray-300">
-                    ← → 또는 A D : 이동
-                  </div>
-                  <div className="text-sm text-gray-300">Space : 발사</div>
-                  <div className="text-sm text-gray-300">P : 일시정지</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📱</span>
-                <div>
-                  <div className="font-bold">모바일</div>
-                  <div className="text-sm text-gray-300">게임판 터치/드래그로 이동</div>
-                  <div className="text-sm text-gray-300">자동 발사 ON/OFF 가능</div>
+                  <div className="text-sm text-gray-300">← → 또는 A D : 이동</div>
+                  <div className="text-sm text-gray-300">Space : 발사 / P : 일시정지</div>
                 </div>
               </div>
             </div>
@@ -279,56 +310,64 @@ export const Galaga = () => {
         </div>
 
         {/* 게임 보드 */}
-        <div className="bg-black/50 backdrop-blur rounded-xl p-4 shadow-lg flex justify-center items-center">
+        <div className="bg-black/50 backdrop-blur rounded-xl p-2 sm:p-4 shadow-lg flex justify-center items-center">
           <div
+            ref={gameContainerRef}
             className="relative bg-black border-4 border-blue-500 touch-none"
             style={{
-              width: GAME_CONFIG.width,
-              height: GAME_CONFIG.height,
+              width: gameSize.width,
+              height: gameSize.height,
+              transform: `scale(1)`,
             }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
           >
             {/* 적 */}
-            {gameState.enemies.map((enemy) => (
-              <div
-                key={enemy.id}
-                className="absolute text-center transition-all duration-75"
-                style={{
-                  left: enemy.x - GAME_CONFIG.enemyWidth / 2,
-                  top: enemy.y - GAME_CONFIG.enemyHeight / 2,
-                  width: GAME_CONFIG.enemyWidth,
-                  height: GAME_CONFIG.enemyHeight,
-                  fontSize: GAME_CONFIG.enemyWidth,
-                }}
-              >
-                {getEnemyEmoji(enemy.type)}
-              </div>
-            ))}
+            {gameState.enemies.map((enemy) => {
+              const scale = gameSize.width / GAME_CONFIG.width;
+              return (
+                <div
+                  key={enemy.id}
+                  className="absolute text-center transition-all duration-75"
+                  style={{
+                    left: (enemy.x - GAME_CONFIG.enemyWidth / 2) * scale,
+                    top: (enemy.y - GAME_CONFIG.enemyHeight / 2) * scale,
+                    width: GAME_CONFIG.enemyWidth * scale,
+                    height: GAME_CONFIG.enemyHeight * scale,
+                    fontSize: GAME_CONFIG.enemyWidth * scale,
+                  }}
+                >
+                  {getEnemyEmoji(enemy.type)}
+                </div>
+              );
+            })}
 
             {/* 총알 */}
-            {gameState.bullets.map((bullet) => (
-              <div
-                key={bullet.id}
-                className="absolute bg-yellow-400 rounded-full"
-                style={{
-                  left: bullet.x - GAME_CONFIG.bulletWidth / 2,
-                  top: bullet.y,
-                  width: GAME_CONFIG.bulletWidth,
-                  height: GAME_CONFIG.bulletHeight,
-                }}
-              />
-            ))}
+            {gameState.bullets.map((bullet) => {
+              const scale = gameSize.width / GAME_CONFIG.width;
+              return (
+                <div
+                  key={bullet.id}
+                  className="absolute bg-yellow-400 rounded-full"
+                  style={{
+                    left: (bullet.x - GAME_CONFIG.bulletWidth / 2) * scale,
+                    top: bullet.y * scale,
+                    width: GAME_CONFIG.bulletWidth * scale,
+                    height: GAME_CONFIG.bulletHeight * scale,
+                  }}
+                />
+              );
+            })}
 
             {/* 플레이어 */}
             <div
               className="absolute text-center"
               style={{
-                left: gameState.playerX - GAME_CONFIG.playerWidth / 2,
-                bottom: 10,
-                width: GAME_CONFIG.playerWidth,
-                height: GAME_CONFIG.playerHeight,
-                fontSize: GAME_CONFIG.playerWidth,
+                left: (gameState.playerX - GAME_CONFIG.playerWidth / 2) * (gameSize.width / GAME_CONFIG.width),
+                bottom: 10 * (gameSize.width / GAME_CONFIG.width),
+                width: GAME_CONFIG.playerWidth * (gameSize.width / GAME_CONFIG.width),
+                height: GAME_CONFIG.playerHeight * (gameSize.width / GAME_CONFIG.width),
+                fontSize: GAME_CONFIG.playerWidth * (gameSize.width / GAME_CONFIG.width),
               }}
             >
               🚀
@@ -343,94 +382,32 @@ export const Galaga = () => {
           </div>
         </div>
 
-        {/* 컨트롤 버튼 */}
+        {/* 컨트롤 */}
         {!gameState.gameOver && (
           <div className="space-y-3">
-            <div className="flex gap-3">
+            {/* 일시정지 & 자동발사 토글 */}
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant={isPaused ? 'primary' : 'secondary'}
                 onClick={() => setIsPaused(!isPaused)}
-                fullWidth
               >
-                {isPaused ? '▶️ 계속' : '⏸️ 일시정지'}
+                {isPaused ? '▶️ 계속' : '⏸️'}
               </Button>
-            </div>
-
-            {/* 자동 발사 토글 */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3">
-              <label className="flex items-center justify-between cursor-pointer">
-                <span className="text-white font-bold">🎯 자동 발사</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={autoFire}
-                    onChange={(e) => setAutoFire(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-14 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-2 flex items-center justify-between cursor-pointer" onClick={() => setAutoFire(!autoFire)}>
+                <span className="text-white font-bold text-sm">🎯 자동발사</span>
+                <div className={`w-12 h-6 rounded-full transition-colors ${autoFire ? 'bg-green-500' : 'bg-gray-600'} relative`}>
+                  <div className={`absolute top-0.5 ${autoFire ? 'left-6' : 'left-0.5'} w-5 h-5 bg-white rounded-full transition-all`}></div>
                 </div>
-              </label>
+              </div>
             </div>
 
             {/* 모바일 조작 안내 */}
-            <div className="bg-blue-500/20 backdrop-blur-lg border-2 border-blue-400/50 rounded-xl p-3 text-center md:hidden">
-              <div className="text-sm text-white font-bold">
-                🕹️ 게임판을 터치/드래그하여 우주선 이동
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-lg border-2 border-blue-400/50 rounded-xl p-3 text-center">
+              <div className="text-white font-bold">
+                🕹️ 게임판을 좌우로 드래그
               </div>
-              {autoFire ? (
-                <div className="text-xs text-blue-200 mt-1">
-                  자동 발사 ON - 자동으로 공격합니다
-                </div>
-              ) : (
-                <div className="text-xs text-blue-200 mt-1">
-                  자동 발사를 켜면 조작이 더 편해집니다
-                </div>
-              )}
-            </div>
-
-            {/* 백업 버튼 컨트롤 (선택적 사용) */}
-            <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4">
-              <div className="text-center text-xs text-white/60 mb-2">
-                또는 버튼 사용:
-              </div>
-              <div className="flex items-center justify-center gap-6">
-                <button
-                  onTouchStart={() => keysPressed.current.add('ArrowLeft')}
-                  onTouchEnd={() => keysPressed.current.delete('ArrowLeft')}
-                  onMouseDown={() => keysPressed.current.add('ArrowLeft')}
-                  onMouseUp={() => keysPressed.current.delete('ArrowLeft')}
-                  className="bg-blue-500 text-white font-bold text-5xl w-24 h-24 rounded-xl hover:bg-blue-600 active:bg-blue-700 active:scale-95 transition-all shadow-lg touch-manipulation"
-                >
-                  ←
-                </button>
-                {!autoFire && (
-                  <button
-                    onClick={() => {
-                      if (gameState.bullets.length < 3) {
-                        setGameState((prev) => {
-                          if (!prev) return prev;
-                          return {
-                            ...prev,
-                            bullets: [...prev.bullets, createBullet(prev.playerX)],
-                          };
-                        });
-                        soundManager.playClick();
-                      }
-                    }}
-                    className="bg-red-500 text-white font-bold text-3xl w-24 h-24 rounded-full hover:bg-red-600 active:bg-red-700 active:scale-95 transition-all shadow-lg touch-manipulation"
-                  >
-                    🔥
-                  </button>
-                )}
-                <button
-                  onTouchStart={() => keysPressed.current.add('ArrowRight')}
-                  onTouchEnd={() => keysPressed.current.delete('ArrowRight')}
-                  onMouseDown={() => keysPressed.current.add('ArrowRight')}
-                  onMouseUp={() => keysPressed.current.delete('ArrowRight')}
-                  className="bg-blue-500 text-white font-bold text-5xl w-24 h-24 rounded-xl hover:bg-blue-600 active:bg-blue-700 active:scale-95 transition-all shadow-lg touch-manipulation"
-                >
-                  →
-                </button>
+              <div className="text-xs text-blue-200 mt-1">
+                {autoFire ? '✅ 자동 공격 중' : '⚠️ 자동 발사를 켜세요'}
               </div>
             </div>
           </div>
