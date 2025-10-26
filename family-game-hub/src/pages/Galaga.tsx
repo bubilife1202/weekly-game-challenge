@@ -22,7 +22,9 @@ export const Galaga = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
+  const [autoFire, setAutoFire] = useState(false);
   const keysPressed = useRef<Set<string>>(new Set());
+  const touchStartX = useRef<number>(0);
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
@@ -89,6 +91,24 @@ export const Galaga = () => {
     return () => clearInterval(gameLoop);
   }, [gameState, isPaused, currentProfileId, addRecord]);
 
+  // 자동 발사
+  useEffect(() => {
+    if (!gameState || gameState.gameOver || isPaused || !autoFire) return;
+
+    const autoFireInterval = setInterval(() => {
+      setGameState((prev) => {
+        if (!prev || prev.bullets.length >= 3) return prev;
+        return {
+          ...prev,
+          bullets: [...prev.bullets, createBullet(prev.playerX)],
+        };
+      });
+      soundManager.playClick();
+    }, 300); // 300ms마다 자동 발사
+
+    return () => clearInterval(autoFireInterval);
+  }, [gameState, isPaused, autoFire]);
+
   // 키보드 컨트롤
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,7 +119,7 @@ export const Galaga = () => {
           setIsPaused(false);
         } else {
           // 총알 발사
-          if (gameState.bullets.length < 3) {
+          if (!autoFire && gameState.bullets.length < 3) {
             // 최대 3발
             setGameState((prev) => {
               if (!prev) return prev;
@@ -134,6 +154,30 @@ export const Galaga = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+  }, [gameState, isPaused, autoFire]);
+
+  // 터치 드래그 컨트롤
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!gameState || gameState.gameOver || isPaused) return;
+    const touch = e.touches[0];
+    touchStartX.current = touch.clientX;
+  }, [gameState, isPaused]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!gameState || gameState.gameOver || isPaused) return;
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeX = touch.clientX - rect.left;
+
+    // 터치 위치로 플레이어 이동
+    setGameState((prev) => {
+      if (!prev) return prev;
+      const newX = Math.max(
+        GAME_CONFIG.playerWidth / 2,
+        Math.min(GAME_CONFIG.width - GAME_CONFIG.playerWidth / 2, relativeX)
+      );
+      return { ...prev, playerX: newX };
+    });
   }, [gameState, isPaused]);
 
   // 시작 화면
@@ -171,7 +215,8 @@ export const Galaga = () => {
                 <span className="text-2xl">📱</span>
                 <div>
                   <div className="font-bold">모바일</div>
-                  <div className="text-sm text-gray-300">화면 하단 버튼 사용</div>
+                  <div className="text-sm text-gray-300">게임판 터치/드래그로 이동</div>
+                  <div className="text-sm text-gray-300">자동 발사 ON/OFF 가능</div>
                 </div>
               </div>
             </div>
@@ -236,11 +281,13 @@ export const Galaga = () => {
         {/* 게임 보드 */}
         <div className="bg-black/50 backdrop-blur rounded-xl p-4 shadow-lg flex justify-center items-center">
           <div
-            className="relative bg-black border-4 border-blue-500"
+            className="relative bg-black border-4 border-blue-500 touch-none"
             style={{
               width: GAME_CONFIG.width,
               height: GAME_CONFIG.height,
             }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
           >
             {/* 적 */}
             {gameState.enemies.map((enemy) => (
@@ -309,46 +356,81 @@ export const Galaga = () => {
               </Button>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4">
-              <div className="flex items-center justify-center gap-4">
+            {/* 자동 발사 토글 */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-white font-bold">🎯 자동 발사</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={autoFire}
+                    onChange={(e) => setAutoFire(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-14 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+                </div>
+              </label>
+            </div>
+
+            {/* 모바일 조작 안내 */}
+            <div className="bg-blue-500/20 backdrop-blur-lg border-2 border-blue-400/50 rounded-xl p-3 text-center md:hidden">
+              <div className="text-sm text-white font-bold">
+                🕹️ 게임판을 터치/드래그하여 우주선 이동
+              </div>
+              {autoFire ? (
+                <div className="text-xs text-blue-200 mt-1">
+                  자동 발사 ON - 자동으로 공격합니다
+                </div>
+              ) : (
+                <div className="text-xs text-blue-200 mt-1">
+                  자동 발사를 켜면 조작이 더 편해집니다
+                </div>
+              )}
+            </div>
+
+            {/* 백업 버튼 컨트롤 (선택적 사용) */}
+            <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4">
+              <div className="text-center text-xs text-white/60 mb-2">
+                또는 버튼 사용:
+              </div>
+              <div className="flex items-center justify-center gap-6">
                 <button
                   onTouchStart={() => keysPressed.current.add('ArrowLeft')}
                   onTouchEnd={() => keysPressed.current.delete('ArrowLeft')}
                   onMouseDown={() => keysPressed.current.add('ArrowLeft')}
                   onMouseUp={() => keysPressed.current.delete('ArrowLeft')}
-                  className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:bg-blue-700 transition-all shadow-lg"
+                  className="bg-blue-500 text-white font-bold text-5xl w-24 h-24 rounded-xl hover:bg-blue-600 active:bg-blue-700 active:scale-95 transition-all shadow-lg touch-manipulation"
                 >
                   ←
                 </button>
-                <button
-                  onClick={() => {
-                    if (gameState.bullets.length < 3) {
-                      setGameState((prev) => {
-                        if (!prev) return prev;
-                        return {
-                          ...prev,
-                          bullets: [...prev.bullets, createBullet(prev.playerX)],
-                        };
-                      });
-                      soundManager.playClick();
-                    }
-                  }}
-                  className="bg-red-500 text-white font-bold text-2xl w-20 h-20 rounded-full hover:bg-red-600 active:bg-red-700 transition-all shadow-lg"
-                >
-                  🔥
-                </button>
+                {!autoFire && (
+                  <button
+                    onClick={() => {
+                      if (gameState.bullets.length < 3) {
+                        setGameState((prev) => {
+                          if (!prev) return prev;
+                          return {
+                            ...prev,
+                            bullets: [...prev.bullets, createBullet(prev.playerX)],
+                          };
+                        });
+                        soundManager.playClick();
+                      }
+                    }}
+                    className="bg-red-500 text-white font-bold text-3xl w-24 h-24 rounded-full hover:bg-red-600 active:bg-red-700 active:scale-95 transition-all shadow-lg touch-manipulation"
+                  >
+                    🔥
+                  </button>
+                )}
                 <button
                   onTouchStart={() => keysPressed.current.add('ArrowRight')}
                   onTouchEnd={() => keysPressed.current.delete('ArrowRight')}
                   onMouseDown={() => keysPressed.current.add('ArrowRight')}
                   onMouseUp={() => keysPressed.current.delete('ArrowRight')}
-                  className="bg-blue-500 text-white font-bold text-4xl w-20 h-20 rounded-xl hover:bg-blue-600 active:bg-blue-700 transition-all shadow-lg"
+                  className="bg-blue-500 text-white font-bold text-5xl w-24 h-24 rounded-xl hover:bg-blue-600 active:bg-blue-700 active:scale-95 transition-all shadow-lg touch-manipulation"
                 >
                   →
                 </button>
-              </div>
-              <div className="text-center text-sm text-white mt-2">
-                발사: 🔥 버튼 / Space키
               </div>
             </div>
           </div>
