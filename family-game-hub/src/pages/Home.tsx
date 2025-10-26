@@ -5,6 +5,7 @@ import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
+import { AdSense } from '../components/common/AdSense';
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -253,6 +254,9 @@ export const Home = () => {
             </div>
           </Card>
         </div>
+
+        {/* 광고 영역 */}
+        <AdSense className="my-6" />
 
         {/* 주간 랭킹 */}
         {ranking.length > 0 && (

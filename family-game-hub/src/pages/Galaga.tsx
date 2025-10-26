@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
+import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   createInitialState,
@@ -355,28 +356,33 @@ export const Galaga = () => {
 
         {/* 게임 오버 메시지 */}
         {gameState.gameOver && (
-          <div className="bg-red-500/20 backdrop-blur-lg border-4 border-red-500 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
-            <div className="text-6xl">💥</div>
-            <div className="space-y-2 text-white">
-              <h2 className="text-3xl font-bold">Game Over!</h2>
-              <div className="text-lg">
-                <div>점수: {gameState.score}</div>
-                <div>레벨: {gameState.level}</div>
+          <>
+            <div className="bg-red-500/20 backdrop-blur-lg border-4 border-red-500 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
+              <div className="text-6xl">💥</div>
+              <div className="space-y-2 text-white">
+                <h2 className="text-3xl font-bold">Game Over!</h2>
+                <div className="text-lg">
+                  <div>점수: {gameState.score}</div>
+                  <div>레벨: {gameState.level}</div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="primary" onClick={startGame} fullWidth>
+                  🔄 다시 하기
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowInstructions(true)}
+                  fullWidth
+                >
+                  📋 메뉴
+                </Button>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button variant="primary" onClick={startGame} fullWidth>
-                🔄 다시 하기
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setShowInstructions(true)}
-                fullWidth
-              >
-                📋 메뉴
-              </Button>
-            </div>
-          </div>
+
+            {/* 게임 오버 후 광고 */}
+            <AdSense className="my-4" />
+          </>
         )}
       </div>
 

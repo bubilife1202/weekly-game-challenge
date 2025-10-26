@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
+import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   createEmptyGrid,
@@ -378,47 +379,52 @@ export const Minesweeper = () => {
 
         {/* 게임 오버/승리 메시지 */}
         {gameOver && (
-          <div
-            className={`${
-              won
-                ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-400'
-                : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-400'
-            } border-4 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in`}
-          >
-            <div className="text-6xl">{won ? '🎉' : '💥'}</div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-textDark">
-                {won ? '승리!' : 'Game Over!'}
-              </h2>
-              <div className="text-lg text-gray-700">
-                <div>시간: {getElapsedTime()}초</div>
-                {won && (
-                  <div className="mt-2 text-2xl font-bold text-primary">
-                    점수: {Math.max(1000 - getElapsedTime(), 100)}점
-                  </div>
-                )}
+          <>
+            <div
+              className={`${
+                won
+                  ? 'bg-gradient-to-r from-yellow-50 to-green-50 border-yellow-400'
+                  : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-400'
+              } border-4 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in`}
+            >
+              <div className="text-6xl">{won ? '🎉' : '💥'}</div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-textDark">
+                  {won ? '승리!' : 'Game Over!'}
+                </h2>
+                <div className="text-lg text-gray-700">
+                  <div>시간: {getElapsedTime()}초</div>
+                  {won && (
+                    <div className="mt-2 text-2xl font-bold text-primary">
+                      점수: {Math.max(1000 - getElapsedTime(), 100)}점
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => startGame(difficulty)}
-                fullWidth
-              >
-                🔄 다시 하기
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setDifficulty(null);
-                  setGrid(null);
-                }}
-                fullWidth
-              >
-                📋 난이도 선택
+              <div className="flex gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => startGame(difficulty)}
+                  fullWidth
+                >
+                  🔄 다시 하기
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDifficulty(null);
+                    setGrid(null);
+                  }}
+                  fullWidth
+                >
+                  📋 난이도 선택
               </Button>
             </div>
           </div>
+
+          {/* 게임 오버/승리 후 광고 */}
+          <AdSense className="my-4" />
+        </>
         )}
       </div>
 

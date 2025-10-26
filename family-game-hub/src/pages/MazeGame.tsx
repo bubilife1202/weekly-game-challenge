@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
+import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   generateMaze,
@@ -512,40 +513,45 @@ export const MazeGame = () => {
 
         {/* 완료 메시지 */}
         {isComplete && (
-          <div className="bg-gradient-to-r from-yellow-50 to-green-50 border-4 border-yellow-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
-            <div className="text-6xl">🎉</div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-textDark">골인!</h2>
-              <div className="text-lg text-gray-700">
-                <div>시간: {formatTime(timer)}</div>
-                <div>이동: {moves}회</div>
-                <div>별: {collectedStars}/{totalStars}</div>
-                <div className="mt-2 text-2xl font-bold text-primary">
-                  점수: {Math.max(1000 + collectedStars * 50 - timer - moves, 100)}점
+          <>
+            <div className="bg-gradient-to-r from-yellow-50 to-green-50 border-4 border-yellow-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
+              <div className="text-6xl">🎉</div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-textDark">골인!</h2>
+                <div className="text-lg text-gray-700">
+                  <div>시간: {formatTime(timer)}</div>
+                  <div>이동: {moves}회</div>
+                  <div>별: {collectedStars}/{totalStars}</div>
+                  <div className="mt-2 text-2xl font-bold text-primary">
+                    점수: {Math.max(1000 + collectedStars * 50 - timer - moves, 100)}점
+                  </div>
                 </div>
               </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => startNewGame(difficulty)}
+                  fullWidth
+                >
+                  🔄 같은 난이도
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDifficulty(null);
+                    setMaze(null);
+                    setIsRunning(false);
+                  }}
+                  fullWidth
+                >
+                  📋 난이도 선택
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => startNewGame(difficulty)}
-                fullWidth
-              >
-                🔄 같은 난이도
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setDifficulty(null);
-                  setMaze(null);
-                  setIsRunning(false);
-                }}
-                fullWidth
-              >
-                📋 난이도 선택
-              </Button>
-            </div>
-          </div>
+
+            {/* 게임 완료 후 광고 */}
+            <AdSense className="my-4" />
+          </>
         )}
       </div>
 

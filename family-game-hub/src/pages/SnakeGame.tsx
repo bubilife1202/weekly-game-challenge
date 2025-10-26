@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
+import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   createInitialState,
@@ -22,6 +23,12 @@ export const SnakeGame = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
   const directionQueueRef = useRef<Direction[]>([]);
+
+  // 조이스틱 상태
+  const [joystickActive, setJoystickActive] = useState(false);
+  const [joystickBase, setJoystickBase] = useState({ x: 0, y: 0 });
+  const [joystickStick, setJoystickStick] = useState({ x: 0, y: 0 });
+  const [currentDirection, setCurrentDirection] = useState<Direction | null>(null);
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
@@ -139,51 +146,94 @@ export const SnakeGame = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [gameState]);
 
-  // 터치 스와이프 컨트롤
+  // 조이스틱 컨트롤
   useEffect(() => {
-    if (!gameState || gameState.gameOver) return;
+    if (!gameState || gameState.gameOver || isPaused) return;
 
-    let touchStartX = 0;
-    let touchStartY = 0;
+    const joystickRadius = 60; // 조이스틱 반경
+    const deadZone = 15; // 중앙 데드존
 
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
+      const touch = e.touches[0];
+      // 조이스틱 베이스를 터치 시작 위치에 배치
+      setJoystickBase({ x: touch.clientX, y: touch.clientY });
+      setJoystickStick({ x: touch.clientX, y: touch.clientY });
+      setJoystickActive(true);
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!joystickActive) return;
+      e.preventDefault();
 
-      const deltaX = touchEndX - touchStartX;
-      const deltaY = touchEndY - touchStartY;
-      const minSwipe = 30;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - joystickBase.x;
+      const deltaY = touch.clientY - joystickBase.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-      let newDirection: Direction | null = null;
+      // 데드존 체크
+      if (distance < deadZone) {
+        setCurrentDirection(null);
+        setJoystickStick({ x: joystickBase.x, y: joystickBase.y });
+        return;
+      }
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (Math.abs(deltaX) > minSwipe) {
-          newDirection = deltaX > 0 ? 'RIGHT' : 'LEFT';
-        }
+      // 스틱 위치 제한 (조이스틱 반경 내)
+      let stickX = touch.clientX;
+      let stickY = touch.clientY;
+      if (distance > joystickRadius) {
+        const angle = Math.atan2(deltaY, deltaX);
+        stickX = joystickBase.x + Math.cos(angle) * joystickRadius;
+        stickY = joystickBase.y + Math.sin(angle) * joystickRadius;
+      }
+      setJoystickStick({ x: stickX, y: stickY });
+
+      // 방향 결정 (4방향)
+      const angle = Math.atan2(deltaY, deltaX);
+      const degrees = (angle * 180) / Math.PI;
+
+      let direction: Direction;
+      if (degrees >= -45 && degrees < 45) {
+        direction = 'RIGHT';
+      } else if (degrees >= 45 && degrees < 135) {
+        direction = 'DOWN';
+      } else if (degrees >= -135 && degrees < -45) {
+        direction = 'UP';
       } else {
-        if (Math.abs(deltaY) > minSwipe) {
-          newDirection = deltaY > 0 ? 'DOWN' : 'UP';
-        }
+        direction = 'LEFT';
       }
 
-      if (newDirection && directionQueueRef.current.length < 3) {
-        directionQueueRef.current.push(newDirection);
-      }
+      setCurrentDirection(direction);
+    };
+
+    const handleTouchEnd = () => {
+      setJoystickActive(false);
+      setCurrentDirection(null);
     };
 
     window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [gameState]);
+  }, [joystickActive, joystickBase, gameState, isPaused]);
+
+  // 조이스틱 방향에 따라 방향 큐에 추가
+  useEffect(() => {
+    if (!currentDirection || !gameState || gameState.gameOver || isPaused) return;
+
+    // 조이스틱 방향을 방향 큐에 추가
+    if (directionQueueRef.current.length < 3) {
+      const lastDirection = directionQueueRef.current[directionQueueRef.current.length - 1] || gameState.direction;
+      // 같은 방향이 아니면 추가
+      if (currentDirection !== lastDirection) {
+        directionQueueRef.current.push(currentDirection);
+      }
+    }
+  }, [currentDirection, gameState, isPaused]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -265,8 +315,8 @@ export const SnakeGame = () => {
           <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-2">
             <div className="font-bold text-blue-900">🎮 조작법:</div>
             <ul className="text-sm text-blue-800 space-y-1 ml-4">
-              <li>• 키보드: WASD 또는 화살표 키</li>
-              <li>• 모바일: 스와이프</li>
+              <li>• 🕹️ 모바일: 화면 터치 후 드래그!</li>
+              <li>• ⌨️ 키보드: WASD 또는 화살표 키</li>
               <li>• Space: 일시정지</li>
               <li>• 🍎 = 음식 (10점)</li>
             </ul>
@@ -381,38 +431,81 @@ export const SnakeGame = () => {
           </div>
         )}
 
-        {/* 게임 오버 메시지 */}
-        {gameState.gameOver && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
-            <div className="text-6xl">💀</div>
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-textDark">Game Over!</h2>
-              <div className="text-lg text-gray-700">
-                <div>점수: {gameState.score}</div>
-                <div>길이: {gameState.snake.length}</div>
-                <div>시간: {formatTime(timer)}</div>
+        {/* 가상 조이스틱 */}
+        {joystickActive && !gameState.gameOver && (
+          <>
+            {/* 조이스틱 베이스 */}
+            <div
+              className="fixed pointer-events-none z-50"
+              style={{
+                left: joystickBase.x - 60,
+                top: joystickBase.y - 60,
+                width: 120,
+                height: 120,
+              }}
+            >
+              <div className="w-full h-full rounded-full bg-gray-800/20 border-4 border-gray-600/40 flex items-center justify-center">
+                {/* 방향 표시 */}
+                <div className="text-gray-600/60 font-bold text-sm">
+                  {currentDirection === 'UP' && '↑'}
+                  {currentDirection === 'DOWN' && '↓'}
+                  {currentDirection === 'LEFT' && '←'}
+                  {currentDirection === 'RIGHT' && '→'}
+                </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={() => startGame(difficulty)}
-                fullWidth
-              >
-                🔄 다시 하기
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setDifficulty(null);
-                  setGameState(null);
-                }}
-                fullWidth
-              >
-                📋 난이도 선택
-              </Button>
+            {/* 조이스틱 스틱 */}
+            <div
+              className="fixed pointer-events-none z-50"
+              style={{
+                left: joystickStick.x - 30,
+                top: joystickStick.y - 30,
+                width: 60,
+                height: 60,
+              }}
+            >
+              <div className="w-full h-full rounded-full bg-green-500/80 border-4 border-green-600 shadow-lg" />
             </div>
-          </div>
+          </>
+        )}
+
+        {/* 게임 오버 메시지 */}
+        {gameState.gameOver && (
+          <>
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
+              <div className="text-6xl">💀</div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-textDark">Game Over!</h2>
+                <div className="text-lg text-gray-700">
+                  <div>점수: {gameState.score}</div>
+                  <div>길이: {gameState.snake.length}</div>
+                  <div>시간: {formatTime(timer)}</div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => startGame(difficulty)}
+                  fullWidth
+                >
+                  🔄 다시 하기
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setDifficulty(null);
+                    setGameState(null);
+                  }}
+                  fullWidth
+                >
+                  📋 난이도 선택
+                </Button>
+              </div>
+            </div>
+
+            {/* 게임 오버 후 광고 */}
+            <AdSense className="my-4" />
+          </>
         )}
       </div>
 
