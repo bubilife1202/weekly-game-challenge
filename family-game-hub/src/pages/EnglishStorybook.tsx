@@ -4,7 +4,6 @@ import { Button } from '../components/common/Button';
 import { speechManager } from '../utils/speech';
 import { getBooksByLevel, type Storybook } from '../data/storybooks';
 import { useLearningStore } from '../store/learningStore';
-import { useVoiceSettingsStore } from '../store/voiceSettingsStore';
 
 interface EnglishStorybookProps {
   onBack: () => void;
@@ -18,7 +17,6 @@ export const EnglishStorybook = ({ onBack }: EnglishStorybookProps) => {
   const [isReading, setIsReading] = useState(false); // 읽고 있는 중인지 표시
 
   const { booksRead, updateBookProgress, markBookCompleted, getBookProgress } = useLearningStore();
-  const { autoPlay } = useVoiceSettingsStore();
 
   // 자동 재생 (페이지 넘어갈 때 자동으로 읽어주기)
   useEffect(() => {

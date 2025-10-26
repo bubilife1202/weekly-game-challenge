@@ -21,7 +21,7 @@ export const AdSense = ({
 }: AdSenseProps) => {
   useEffect(() => {
     try {
-      if (window.adsbygoogle && process.env.NODE_ENV === 'production') {
+      if (window.adsbygoogle && import.meta.env.PROD) {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       }
     } catch (error) {
@@ -30,7 +30,7 @@ export const AdSense = ({
   }, []);
 
   // 개발 모드에서는 플레이스홀더 표시
-  if (process.env.NODE_ENV !== 'production') {
+  if (!import.meta.env.PROD) {
     return (
       <div
         className={`bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center text-gray-500 text-sm ${className}`}
