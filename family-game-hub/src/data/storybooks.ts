@@ -122,6 +122,76 @@ export const storybooks: Storybook[] = [
       }
     ]
   },
+  {
+    id: 'colorful-balloon',
+    title: 'A Colorful Balloon',
+    titleKorean: '알록달록 풍선',
+    level: 1,
+    category: 'daily',
+    coverEmoji: '🎈',
+    pages: [
+      {
+        text: 'I have a red balloon.',
+        korean: '나는 빨간 풍선이 있어요.',
+        image: '🔴'
+      },
+      {
+        text: 'The balloon flies up high.',
+        korean: '풍선이 높이 날아올라요.',
+        image: '🎈'
+      },
+      {
+        text: 'It goes up to the sky.',
+        korean: '하늘로 올라가요.',
+        image: '☁️'
+      },
+      {
+        text: 'I wave goodbye to my balloon.',
+        korean: '풍선에게 안녕을 손흔들어요.',
+        image: '👋'
+      },
+      {
+        text: 'I will get a new balloon!',
+        korean: '새 풍선을 받을 거예요!',
+        image: '😊'
+      }
+    ]
+  },
+  {
+    id: 'magic-garden',
+    title: 'The Magic Garden',
+    titleKorean: '마법의 정원',
+    level: 1,
+    category: 'nature',
+    coverEmoji: '🌻',
+    pages: [
+      {
+        text: 'Look at my garden!',
+        korean: '내 정원을 봐요!',
+        image: '🌻'
+      },
+      {
+        text: 'I see pretty flowers.',
+        korean: '예쁜 꽃들이 보여요.',
+        image: '🌸'
+      },
+      {
+        text: 'A butterfly is flying.',
+        korean: '나비가 날아가고 있어요.',
+        image: '🦋'
+      },
+      {
+        text: 'Bees are buzzing around.',
+        korean: '벌들이 윙윙거려요.',
+        image: '🐝'
+      },
+      {
+        text: 'My garden is beautiful!',
+        korean: '내 정원은 아름다워요!',
+        image: '✨'
+      }
+    ]
+  },
 
   // ===== 레벨 2: 중급 동화 =====
   {
@@ -241,6 +311,86 @@ export const storybooks: Storybook[] = [
         text: 'It was the best day ever!',
         korean: '최고의 날이었어요!',
         image: '🌟'
+      }
+    ]
+  },
+  {
+    id: 'little-chef',
+    title: 'The Little Chef',
+    titleKorean: '꼬마 요리사',
+    level: 2,
+    category: 'daily',
+    coverEmoji: '👨‍🍳',
+    pages: [
+      {
+        text: 'Today I want to help Mom cook.',
+        korean: '오늘은 엄마 요리를 도와드리고 싶어요.',
+        image: '👨‍🍳'
+      },
+      {
+        text: 'First I wash my hands very well.',
+        korean: '먼저 손을 깨끗이 씻어요.',
+        image: '🧼'
+      },
+      {
+        text: 'Mom gives me vegetables to wash.',
+        korean: '엄마가 씻을 야채를 주세요.',
+        image: '🥕'
+      },
+      {
+        text: 'I help stir the soup carefully.',
+        korean: '조심스럽게 수프를 저어요.',
+        image: '🥣'
+      },
+      {
+        text: 'The kitchen smells so good!',
+        korean: '부엌에서 좋은 냄새가 나요!',
+        image: '✨'
+      },
+      {
+        text: 'We made a delicious dinner together!',
+        korean: '함께 맛있는 저녁을 만들었어요!',
+        image: '🍽️'
+      }
+    ]
+  },
+  {
+    id: 'sharing-toys',
+    title: 'Sharing is Caring',
+    titleKorean: '나누면 행복해요',
+    level: 2,
+    category: 'friendship',
+    coverEmoji: '🧸',
+    pages: [
+      {
+        text: 'My friend came to play today.',
+        korean: '오늘 친구가 놀러 왔어요.',
+        image: '👫'
+      },
+      {
+        text: 'I have many toys to share.',
+        korean: '나눌 수 있는 장난감이 많아요.',
+        image: '🧸'
+      },
+      {
+        text: 'We play with my toy car together.',
+        korean: '함께 장난감 자동차를 가지고 놀아요.',
+        image: '🚗'
+      },
+      {
+        text: 'Then we build blocks together.',
+        korean: '그 다음엔 함께 블록을 쌓아요.',
+        image: '🧱'
+      },
+      {
+        text: 'Sharing makes us both happy!',
+        korean: '나누니까 둘 다 행복해요!',
+        image: '😊'
+      },
+      {
+        text: 'Friends are the best!',
+        korean: '친구는 최고예요!',
+        image: '💕'
       }
     ]
   },
@@ -413,6 +563,131 @@ export const storybooks: Storybook[] = [
         text: 'She says I am her favorite grandchild!',
         korean: '할머니는 내가 제일 좋아하는 손주라고 말씀하세요!',
         image: '🌟'
+      }
+    ]
+  },
+  {
+    id: 'brave-explorer',
+    title: 'The Brave Little Explorer',
+    titleKorean: '용감한 꼬마 탐험가',
+    level: 3,
+    category: 'adventure',
+    coverEmoji: '🗺️',
+    pages: [
+      {
+        text: 'I love exploring the world around me.',
+        korean: '나는 내 주변 세상을 탐험하는 걸 좋아해요.',
+        image: '🗺️'
+      },
+      {
+        text: 'Yesterday I went to the forest with my dad.',
+        korean: '어제 아빠와 숲에 갔어요.',
+        image: '🌲'
+      },
+      {
+        text: 'We packed sandwiches and water in our backpack.',
+        korean: '배낭에 샌드위치와 물을 챙겼어요.',
+        image: '🎒'
+      },
+      {
+        text: 'We followed a winding path through the trees.',
+        korean: '나무 사이로 구불구불한 길을 따라갔어요.',
+        image: '🛤️'
+      },
+      {
+        text: 'I discovered a beautiful waterfall!',
+        korean: '아름다운 폭포를 발견했어요!',
+        image: '💦'
+      },
+      {
+        text: 'We sat by the water and ate our lunch.',
+        korean: '물가에 앉아서 점심을 먹었어요.',
+        image: '🧺'
+      },
+      {
+        text: 'I saw colorful birds singing in the trees.',
+        korean: '나무에서 노래하는 색색의 새들을 봤어요.',
+        image: '🦜'
+      },
+      {
+        text: 'Dad taught me about different plants and animals.',
+        korean: '아빠가 다양한 식물과 동물에 대해 가르쳐주셨어요.',
+        image: '🌿'
+      },
+      {
+        text: 'Before we left I took some pictures to remember.',
+        korean: '떠나기 전에 기억하려고 사진을 찍었어요.',
+        image: '📸'
+      },
+      {
+        text: 'I cannot wait for our next adventure!',
+        korean: '다음 모험이 기다려져요!',
+        image: '⭐'
+      }
+    ]
+  },
+  {
+    id: 'kind-heart',
+    title: 'A Kind Heart',
+    titleKorean: '따뜻한 마음',
+    level: 3,
+    category: 'feelings',
+    coverEmoji: '💝',
+    pages: [
+      {
+        text: 'One cold winter morning I saw something sad.',
+        korean: '어느 추운 겨울 아침 슬픈 걸 봤어요.',
+        image: '❄️'
+      },
+      {
+        text: 'A small bird was shivering on our window.',
+        korean: '작은 새가 우리 창문에서 떨고 있었어요.',
+        image: '🐦'
+      },
+      {
+        text: 'It looked cold and hungry.',
+        korean: '추워 보이고 배고파 보였어요.',
+        image: '😢'
+      },
+      {
+        text: 'I quickly asked Mom if we could help.',
+        korean: '빨리 엄마에게 도와줄 수 있냐고 물었어요.',
+        image: '🙋'
+      },
+      {
+        text: 'We made a little house from a box.',
+        korean: '상자로 작은 집을 만들었어요.',
+        image: '📦'
+      },
+      {
+        text: 'I put soft cloth inside to keep it warm.',
+        korean: '따뜻하게 해주려고 안에 부드러운 천을 넣었어요.',
+        image: '🧺'
+      },
+      {
+        text: 'Mom gave me seeds and water for the bird.',
+        korean: '엄마가 새를 위한 씨앗과 물을 주셨어요.',
+        image: '🌾'
+      },
+      {
+        text: 'The bird ate and started to feel better.',
+        korean: '새가 먹고 나아지기 시작했어요.',
+        image: '😊'
+      },
+      {
+        text: 'After a few days it was strong again.',
+        korean: '며칠 후 다시 건강해졌어요.',
+        image: '💪'
+      },
+      {
+        text: 'We opened the window and the bird flew away happily.',
+        korean: '창문을 열자 새가 행복하게 날아갔어요.',
+        image: '🕊️'
+      },
+      {
+        text: 'Mom said I have a very kind heart.',
+        korean: '엄마는 내가 정말 따뜻한 마음을 가졌다고 하셨어요.',
+        image: '💝'
       }
     ]
   }
