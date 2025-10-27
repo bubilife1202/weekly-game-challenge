@@ -237,13 +237,17 @@ export const MazeGame = () => {
     };
   }, [joystickActive, joystickBase, isRunning, isComplete]);
 
-  // 연속 이동 (조이스틱 방향에 따라)
+  // 연속 이동 (조이스틱 방향에 따라) - 최적화됨
   useEffect(() => {
     if (!currentDirection || !isRunning || isComplete) return;
 
+    // 첫 이동은 즉시 실행
+    movePlayer(currentDirection);
+
+    // 그 다음부터는 200ms 간격으로 이동 (더 부드럽고 제어하기 쉬움)
     const moveInterval = setInterval(() => {
       movePlayer(currentDirection);
-    }, 150); // 150ms마다 이동
+    }, 200);
 
     return () => clearInterval(moveInterval);
   }, [currentDirection, movePlayer, isRunning, isComplete]);

@@ -65,13 +65,13 @@ export const Galaga = () => {
     setIsPaused(false);
   }, []);
 
-  // 게임 루프
+  // 게임 루프 - 터치 버그 수정
   useEffect(() => {
     if (!gameState || gameState.gameOver || isPaused) return;
 
     const gameLoop = setInterval(() => {
       setGameState((prevState) => {
-        if (!prevState) return prevState;
+        if (!prevState || prevState.gameOver) return prevState;
 
         let newState = { ...prevState };
 
@@ -115,9 +115,9 @@ export const Galaga = () => {
     }, 1000 / 60); // 60 FPS
 
     return () => clearInterval(gameLoop);
-  }, [gameState, isPaused, currentProfileId, addRecord]);
+  }, [isPaused, currentProfileId, addRecord]);
 
-  // 자동 발사
+  // 자동 발사 - 버그 수정
   useEffect(() => {
     if (!gameState || gameState.gameOver || isPaused || !autoFire) return;
 
@@ -133,7 +133,7 @@ export const Galaga = () => {
     }, 300); // 300ms마다 자동 발사
 
     return () => clearInterval(autoFireInterval);
-  }, [gameState?.gameOver, isPaused, autoFire]);
+  }, [isPaused, autoFire]);
 
   // 키보드 컨트롤
   useEffect(() => {
