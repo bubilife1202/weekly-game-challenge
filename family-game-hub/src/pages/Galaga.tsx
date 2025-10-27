@@ -123,17 +123,17 @@ export const Galaga = () => {
 
     const autoFireInterval = setInterval(() => {
       setGameState((prev) => {
-        if (!prev || prev.bullets.length >= 3) return prev;
+        if (!prev || prev.gameOver || prev.bullets.length >= 3) return prev;
+        soundManager.playClick();
         return {
           ...prev,
           bullets: [...prev.bullets, createBullet(prev.playerX)],
         };
       });
-      soundManager.playClick();
     }, 300); // 300ms마다 자동 발사
 
     return () => clearInterval(autoFireInterval);
-  }, [gameState, isPaused, autoFire]);
+  }, [gameState?.gameOver, isPaused, autoFire]);
 
   // 키보드 컨트롤
   useEffect(() => {

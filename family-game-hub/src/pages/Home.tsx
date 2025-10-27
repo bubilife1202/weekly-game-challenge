@@ -269,6 +269,22 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 슈퍼 점프맨 */}
+          <Card onClick={() => navigate('/game/mario')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🍄</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">슈퍼 점프맨</h3>
+                    <p className="text-sm text-gray-600">점프하고 달려요!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 광고 영역 */}
