@@ -16,6 +16,9 @@ export const Home = () => {
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
 
+  // 버전 정보
+  const version = import.meta.env.VITE_APP_VERSION || '1.0.0';
+
   // 프로필이 없으면 간단한 안내만 표시 (게스트 모드 가능)
 
   return (
@@ -346,6 +349,12 @@ export const Home = () => {
             </div>
           </Card>
         )}
+
+        {/* 버전 정보 */}
+        <div className="text-center py-6 text-sm text-gray-500">
+          <p>Family Game Hub v{version}</p>
+          <p className="text-xs mt-1">© 2025 All rights reserved</p>
+        </div>
       </div>
     </div>
   );
