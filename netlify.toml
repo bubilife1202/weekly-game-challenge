@@ -6,6 +6,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Production branch
+[context.production]
+  branch = "claude/mobile-snake-game-ux-011CUVhuQEuLejKmTzwUr6Tt"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
