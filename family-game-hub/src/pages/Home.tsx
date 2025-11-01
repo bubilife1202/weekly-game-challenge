@@ -288,6 +288,22 @@ export const Home = () => {
               <div className="text-2xl">→</div>
             </div>
           </Card>
+
+          {/* 바람의 유산 */}
+          <Card onClick={() => navigate('/game/wind-legacy')}>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">🌪️</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-textDark">바람의 유산</h3>
+                    <p className="text-sm text-gray-600">시간을 되감고 퍼즐을 풀어요!</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-2xl">→</div>
+            </div>
+          </Card>
         </div>
 
         {/* 광고 영역 */}

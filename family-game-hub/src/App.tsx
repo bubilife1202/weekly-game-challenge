@@ -13,6 +13,7 @@ import { Minesweeper } from './pages/Minesweeper';
 import { Galaga } from './pages/Galaga';
 import { Breakout } from './pages/Breakout';
 import { MarioGame } from './pages/MarioGame';
+import { WindLegacyGame } from './pages/WindLegacyGame';
 import { Profiles } from './pages/Profiles';
 import { useEffect } from 'react';
 import { useSettingsStore } from './store/settingsStore';
@@ -44,6 +45,7 @@ function App() {
         <Route path="/game/galaga" element={<Galaga />} />
         <Route path="/game/breakout" element={<Breakout />} />
         <Route path="/game/mario" element={<MarioGame />} />
+        <Route path="/game/wind-legacy" element={<WindLegacyGame />} />
         <Route path="/profiles" element={<Profiles />} />
       </Routes>
     </BrowserRouter>
