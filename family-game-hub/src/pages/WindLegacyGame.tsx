@@ -618,44 +618,51 @@ export const WindLegacyGame = () => {
 
             {/* 모바일 컨트롤 버튼 */}
             {isMobile && gameState && !gameState.gameOver && !gameState.won && (
-              <div className="mt-4 flex justify-between gap-2">
-                <Button
-                  onClick={handleMobileJump}
-                  className="flex-1 py-3 text-lg"
-                  disabled={!gameState.player.onGround}
-                >
-                  ⬆️ 점프
-                </Button>
-                <Button
-                  onClick={handleMobileDash}
-                  className="flex-1 py-3 text-lg"
-                  variant="secondary"
-                  disabled={!gameState.abilities.airDash || gameState.player.onGround}
-                >
-                  💨 대시
-                </Button>
-                <Button
-                  onClick={handleMobileEcho}
-                  className="flex-1 py-3 text-lg"
-                  variant="secondary"
-                >
-                  👤 메아리
-                </Button>
-                <Button
-                  onClick={handleMobilePurify}
-                  className="flex-1 py-3 text-lg"
-                  variant="secondary"
-                >
-                  😇 정화
-                </Button>
-                <Button
-                  onClick={handleMobileRewind}
-                  className="flex-1 py-3 text-lg"
-                  variant="secondary"
-                  disabled={gameState.rewindEnergy < 30}
-                >
-                  ⏪ 되감기
-                </Button>
+              <div className="mt-4 space-y-2">
+                {/* 첫 번째 줄: 이동 관련 */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleMobileJump}
+                    className="flex-1 py-4 text-xl font-bold"
+                    disabled={!gameState.player.onGround}
+                  >
+                    ⬆️ 점프
+                  </Button>
+                  <Button
+                    onClick={handleMobileDash}
+                    className="flex-1 py-4 text-xl font-bold"
+                    variant="secondary"
+                    disabled={!gameState.abilities.airDash || !gameState.player.canAirDash || gameState.player.dashCooldown > 0}
+                  >
+                    💨 대시
+                  </Button>
+                </div>
+
+                {/* 두 번째 줄: 능력 */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleMobileEcho}
+                    className="flex-1 py-4 text-xl font-bold"
+                    variant="secondary"
+                  >
+                    👤 메아리
+                  </Button>
+                  <Button
+                    onClick={handleMobilePurify}
+                    className="flex-1 py-4 text-xl font-bold"
+                    variant="secondary"
+                  >
+                    😇 정화
+                  </Button>
+                  <Button
+                    onClick={handleMobileRewind}
+                    className="flex-1 py-4 text-xl font-bold"
+                    variant="secondary"
+                    disabled={gameState.rewindEnergy < 30}
+                  >
+                    ⏪ 되감기
+                  </Button>
+                </div>
               </div>
             )}
           </div>

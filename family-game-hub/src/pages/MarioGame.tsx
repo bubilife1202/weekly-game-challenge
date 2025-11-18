@@ -471,10 +471,19 @@ export const MarioGame = () => {
           )}
         </div>
 
-        {/* 모바일 힌트 */}
-        {isMobile && (
-          <div className="bg-white rounded-xl p-3 text-center text-sm text-gray-600">
-            <span className="font-bold">왼쪽 화면:</span> 좌우 이동 | <span className="font-bold">오른쪽 화면:</span> 점프
+        {/* 모바일 컨트롤 버튼 */}
+        {isMobile && gameState && !gameState.gameOver && !gameState.won && !isPaused && (
+          <div className="flex gap-3 mt-3">
+            <Button
+              onClick={() => {
+                setGameState((prev) => (prev ? jumpPlayer(prev) : prev));
+                soundManager.playClick();
+              }}
+              className="flex-1 py-6 text-2xl font-bold"
+              disabled={!gameState.player.onGround}
+            >
+              ⬆️ 점프
+            </Button>
           </div>
         )}
       </div>
