@@ -1,11 +1,15 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { motion, type HTMLMotionProps, type MotionProps } from 'framer-motion';
 import { soundManager } from '../../utils/sound';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref'> {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'success' | 'warning';
   size?: 'small' | 'medium' | 'large';
   fullWidth?: boolean;
+  animated?: boolean;
+  tapScale?: number;
+  hoverLift?: boolean;
 }
 
 export const Button = ({
@@ -13,12 +17,15 @@ export const Button = ({
   variant = 'primary',
   size = 'medium',
   fullWidth = false,
+  animated = false,
+  tapScale = 0.96,
+  hoverLift = true,
   onClick,
   className = '',
   ...props
 }: ButtonProps) => {
   const baseClasses =
-    'font-bold rounded-xl transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed';
+    'font-bold rounded-xl transition-all duration-200 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
 
   const variantClasses = {
     primary: 'bg-primary hover:bg-primary/90 text-white',
@@ -40,13 +47,22 @@ export const Button = ({
     onClick?.(e);
   };
 
+  const motionConfig: MotionProps = animated
+    ? {
+        whileHover: hoverLift ? { y: -2, scale: 1.01 } : undefined,
+        whileTap: { scale: tapScale },
+        transition: { type: 'spring', stiffness: 320, damping: 20 },
+      }
+    : {};
+
   return (
-    <button
+    <motion.button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
       onClick={handleClick}
+      {...motionConfig}
       {...props}
     >
       {children}
-    </button>
+    </motion.button>
   );
 };

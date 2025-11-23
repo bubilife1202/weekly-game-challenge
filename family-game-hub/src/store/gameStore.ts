@@ -10,7 +10,14 @@ import type {
 
 interface GameState {
   records: GameRecord[];
-  highlights: PlayHighlight[];
+  playStreaks: Record<string, { count: number; lastPlayed: number }>;
+  bonusSkins: Record<string, string[]>;
+  latestBonus?: {
+    profileId: string;
+    streakCount: number;
+    bonusScore?: number;
+    bonusSkin?: string;
+  };
   addRecord: (record: GameRecord) => void;
   addHighlight: (
     highlight: Omit<
@@ -22,8 +29,12 @@ interface GameState {
   addHighlightShare: (highlightId: string) => void;
   getProfileStats: (profileId: string) => GameStats;
   getWeeklyRanking: () => { profileId: string; count: number }[];
-  getRecentHighlights: () => PlayHighlight[];
-  getWeeklyHighlightSummary: () => WeeklyHighlightSummary | null;
+  getBonusStatus: (profileId: string) => {
+    streakCount: number;
+    nextUnlockIn: number;
+    unlockedSkins: string[];
+    latestBonus?: GameState['latestBonus'];
+  };
 }
 
 const getEndOfWeek = () => {
@@ -54,12 +65,60 @@ export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       records: [],
-      highlights: [],
+      playStreaks: {},
+      bonusSkins: {},
 
       addRecord: (record) => {
-        set((state) => ({
-          records: [...state.records, record],
-        }));
+        const now = Date.now();
+
+        set((state) => {
+          const streakInfo = state.playStreaks[record.profileId] || {
+            count: 0,
+            lastPlayed: 0,
+          };
+
+          const withinSession = now - streakInfo.lastPlayed < 45 * 60 * 1000;
+          const streakCount = withinSession ? streakInfo.count + 1 : 1;
+          const earnedBonus = streakCount > 0 && streakCount % 3 === 0;
+
+          const bonusScore = earnedBonus
+            ? Math.max(25, Math.round(record.score * 0.15))
+            : undefined;
+          const bonusSkin = earnedBonus
+            ? `${record.gameType}-streak-${Math.floor(streakCount / 3)}`
+            : undefined;
+
+          const enrichedRecord: GameRecord = {
+            ...record,
+            streakCount,
+            ...(bonusScore ? { bonusScore } : {}),
+            ...(bonusSkin ? { bonusSkin } : {}),
+          };
+
+          const unlockedSkins = bonusSkin
+            ? [...(state.bonusSkins[record.profileId] || []), bonusSkin]
+            : state.bonusSkins[record.profileId] || [];
+
+          const latestBonus = {
+            profileId: record.profileId,
+            streakCount,
+            bonusScore,
+            bonusSkin,
+          };
+
+          return {
+            records: [...state.records, enrichedRecord],
+            playStreaks: {
+              ...state.playStreaks,
+              [record.profileId]: { count: streakCount, lastPlayed: now },
+            },
+            bonusSkins: {
+              ...state.bonusSkins,
+              [record.profileId]: unlockedSkins,
+            },
+            latestBonus,
+          };
+        });
       },
 
       addHighlight: ({ id, createdAt, ...highlight }) => {
@@ -141,35 +200,16 @@ export const useGameStore = create<GameState>()(
           .sort((a, b) => b.count - a.count);
       },
 
-      getRecentHighlights: () => {
-        const { highlights } = get();
-        return [...highlights].sort((a, b) => b.createdAt - a.createdAt);
-      },
-
-      getWeeklyHighlightSummary: () => {
-        const { highlights } = get();
-        const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const weeklyHighlights = highlights.filter(
-          (highlight) => highlight.createdAt >= oneWeekAgo
-        );
-
-        if (weeklyHighlights.length === 0) return null;
-
-        const topHighlight = weeklyHighlights.reduce((top, current) => {
-          const topEngagement = top.reactions + top.shares;
-          const currentEngagement = current.reactions + current.shares;
-
-          if (currentEngagement === topEngagement) {
-            return current.score > top.score ? current : top;
-          }
-
-          return currentEngagement > topEngagement ? current : top;
-        }, weeklyHighlights[0]);
+      getBonusStatus: (profileId) => {
+        const { playStreaks, bonusSkins, latestBonus } = get();
+        const streakCount = playStreaks[profileId]?.count ?? 0;
+        const nextUnlockIn = 3 - ((streakCount % 3) || 3);
 
         return {
-          highlight: topHighlight,
-          totalReactions: topHighlight.reactions,
-          totalShares: topHighlight.shares,
+          streakCount,
+          nextUnlockIn,
+          unlockedSkins: bonusSkins[profileId] || [],
+          latestBonus,
         };
       },
     }),

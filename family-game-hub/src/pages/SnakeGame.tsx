@@ -14,6 +14,8 @@ import {
 } from '../utils/snake';
 import { useGameStore } from '../store/gameStore';
 import { useProfileStore } from '../store/profileStore';
+import { useSettingsStore } from '../store/settingsStore';
+import { QuickRulesCard } from '../components/common/QuickRulesCard';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -22,7 +24,9 @@ export const SnakeGame = () => {
   const [gameState, setGameState] = useState<SnakeState | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [playCount, setPlayCount] = useState(0);
   const directionQueueRef = useRef<Direction[]>([]);
+  const lastFrameRef = useRef<number | null>(null);
 
   // 조이스틱 상태
   const [joystickActive, setJoystickActive] = useState(false);
@@ -32,6 +36,8 @@ export const SnakeGame = () => {
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
+  const { targetFps, lowPerformanceMode, setTargetFps, toggleLowPerformanceMode } =
+    useSettingsStore();
 
   // 타이머
   useEffect(() => {
@@ -52,57 +58,79 @@ export const SnakeGame = () => {
     setGameState(createInitialState(gridSize));
     setTimer(0);
     setIsPaused(false);
+    setPlayCount((count) => count + 1);
     directionQueueRef.current = [];
+    lastFrameRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (isPaused) {
+      lastFrameRef.current = null;
+    }
+  }, [isPaused]);
 
   // 게임 루프
   useEffect(() => {
     if (!gameState || !difficulty || gameState.gameOver || isPaused) return;
 
-    const speed = GAME_SPEEDS[difficulty];
-    const interval = setInterval(() => {
-      setGameState((prevState) => {
-        if (!prevState) return prevState;
+    const tickInterval =
+      GAME_SPEEDS[difficulty] * (60 / targetFps) * (lowPerformanceMode ? 1.25 : 1);
 
-        // 큐에서 방향 꺼내기
-        let newDirection = prevState.direction;
-        if (directionQueueRef.current.length > 0) {
-          newDirection = changeDirection(
-            prevState.direction,
-            directionQueueRef.current.shift()!
-          );
-        }
+    const loop = (time: number) => {
+      if (!lastFrameRef.current) {
+        lastFrameRef.current = time;
+      }
 
-        const newState = moveSnake(
-          { ...prevState, direction: newDirection },
-          GRID_SIZES[difficulty]
-        );
+      const delta = time - lastFrameRef.current;
+      if (delta >= tickInterval) {
+        lastFrameRef.current = time;
 
-        // 게임 오버 체크
-        if (newState.gameOver && !prevState.gameOver) {
-          soundManager.playMismatch();
-          // 게임 결과 저장
-          if (currentProfileId) {
-            addRecord({
-              profileId: currentProfileId,
-              gameType: 'snake',
-              difficulty,
-              time: timer,
-              score: newState.score,
-              completedAt: Date.now(),
-            });
+        setGameState((prevState) => {
+          if (!prevState) return prevState;
+
+          // 큐에서 방향 꺼내기
+          let newDirection = prevState.direction;
+          if (directionQueueRef.current.length > 0) {
+            newDirection = changeDirection(
+              prevState.direction,
+              directionQueueRef.current.shift()!
+            );
           }
-        } else if (newState.score > prevState.score) {
-          // 음식 먹음
-          soundManager.playMatch();
-        }
 
-        return newState;
-      });
-    }, speed);
+          const newState = moveSnake(
+            { ...prevState, direction: newDirection },
+            GRID_SIZES[difficulty]
+          );
 
-    return () => clearInterval(interval);
-  }, [gameState, difficulty, isPaused, currentProfileId, addRecord, timer]);
+          // 게임 오버 체크
+          if (newState.gameOver && !prevState.gameOver) {
+            soundManager.playMismatch();
+            // 게임 결과 저장
+            if (currentProfileId) {
+              addRecord({
+                profileId: currentProfileId,
+                gameType: 'snake',
+                difficulty,
+                time: timer,
+                score: newState.score,
+                completedAt: Date.now(),
+              });
+            }
+          } else if (newState.score > prevState.score) {
+            // 음식 먹음
+            soundManager.playMatch();
+          }
+
+          return newState;
+        });
+      }
+
+      requestAnimationFrame(loop);
+    };
+
+    const frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [gameState, difficulty, isPaused, currentProfileId, addRecord, timer, targetFps, lowPerformanceMode]);
 
   // 키보드 컨트롤
   useEffect(() => {
@@ -248,6 +276,50 @@ export const SnakeGame = () => {
         <Header title="🐍 Snake 게임" showBack />
 
         <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
+          <QuickRulesCard
+            title="15초 안에 규칙 훑기"
+            subtitle="두 판까지만 자동으로 열려요"
+            playCount={playCount}
+            rules={['음식을 먹을 때마다 길이가 늘어나요.', '몸이나 벽에 닿으면 즉시 게임 오버!', '연속 3판 달성 시 보너스 점수와 스킨 획득 기회!']}
+            tips={[
+              '방향을 미리 입력해 회전을 부드럽게 이어보세요.',
+              '저성능 모드로 배터리/발열을 줄일 수 있어요.',
+            ]}
+            accentEmoji="🐍"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl p-3 shadow flex items-center justify-between gap-2">
+              <div>
+                <div className="text-xs text-gray-500">목표 프레임</div>
+                <div className="font-bold text-textDark">{targetFps} fps</div>
+              </div>
+              <Button
+                size="small"
+                variant="secondary"
+                animated
+                onClick={() => setTargetFps(targetFps === 60 ? 48 : 60)}
+              >
+                {targetFps === 60 ? '절전 48fps' : '60fps로'}
+              </Button>
+            </div>
+
+            <div className="bg-white rounded-xl p-3 shadow flex items-center justify-between gap-2">
+              <div>
+                <div className="text-xs text-gray-500">저성능 모드</div>
+                <div className="font-bold text-textDark">{lowPerformanceMode ? 'ON - 부드럽게' : 'OFF - 선명하게'}</div>
+              </div>
+              <Button
+                size="small"
+                variant={lowPerformanceMode ? 'secondary' : 'primary'}
+                animated
+                onClick={toggleLowPerformanceMode}
+              >
+                {lowPerformanceMode ? '해제' : '켜기'}
+              </Button>
+            </div>
+          </div>
+
           <div className="text-center space-y-4">
             <div className="text-8xl">🐍</div>
             <h2 className="text-3xl font-bold text-textDark">Snake 게임</h2>
@@ -349,6 +421,50 @@ export const SnakeGame = () => {
       />
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
+        <QuickRulesCard
+          title="빠른 규칙 카드"
+          subtitle="15초 후 자동 축소"
+          playCount={playCount}
+          rules={['화면을 스와이프하거나 방향키로 뱀을 조종하세요.', '음식을 먹으면 점수와 길이가 증가합니다.', '연속 3판째마다 보너스 점수와 전용 스킨을 노려보세요.']}
+          tips={[
+            '저성능 모드에서는 틱이 느려져 배터리를 아낄 수 있어요.',
+            `${targetFps}fps 목표를 유지하며 움직임이 안정화돼요.`,
+          ]}
+          accentEmoji="⚡"
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-xl p-3 shadow flex items-center justify-between gap-2">
+            <div>
+              <div className="text-xs text-gray-500">목표 프레임</div>
+              <div className="font-bold text-textDark">{targetFps} fps</div>
+            </div>
+            <Button
+              size="small"
+              variant="secondary"
+              animated
+              onClick={() => setTargetFps(targetFps === 60 ? 48 : 60)}
+            >
+              {targetFps === 60 ? '절전 48fps' : '60fps로'}
+            </Button>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 shadow flex items-center justify-between gap-2">
+            <div>
+              <div className="text-xs text-gray-500">저성능 모드</div>
+              <div className="font-bold text-textDark">{lowPerformanceMode ? 'ON' : 'OFF'}</div>
+            </div>
+            <Button
+              size="small"
+              variant={lowPerformanceMode ? 'secondary' : 'primary'}
+              animated
+              onClick={toggleLowPerformanceMode}
+            >
+              {lowPerformanceMode ? '해제' : '켜기'}
+            </Button>
+          </div>
+        </div>
+
         {/* 상태 표시 */}
         <div className="bg-white rounded-xl p-4 shadow-md">
           <div className="grid grid-cols-3 gap-4 text-center">
@@ -426,6 +542,7 @@ export const SnakeGame = () => {
                 variant={isPaused ? 'primary' : 'secondary'}
                 onClick={() => setIsPaused(!isPaused)}
                 fullWidth
+                animated
               >
                 {isPaused ? '▶️ 계속' : '⏸️ 일시정지'}
               </Button>
@@ -496,6 +613,7 @@ export const SnakeGame = () => {
                   variant="primary"
                   onClick={() => startGame(difficulty)}
                   fullWidth
+                  animated
                 >
                   🔄 다시 하기
                 </Button>
@@ -506,6 +624,7 @@ export const SnakeGame = () => {
                     setGameState(null);
                   }}
                   fullWidth
+                  animated
                 >
                   📋 난이도 선택
                 </Button>
