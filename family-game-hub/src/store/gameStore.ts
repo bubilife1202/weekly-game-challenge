@@ -4,20 +4,127 @@ import type {
   GameRecord,
   GameStats,
   Difficulty,
-  PlayHighlight,
-  WeeklyHighlightSummary,
+  Mission,
+  MissionType,
+  LeagueState,
 } from '../types';
+
+const getDateKey = (date = new Date()) => date.toISOString().split('T')[0];
+
+const getWeekKey = (date = new Date()) => {
+  const currentDate = new Date(date);
+  const day = currentDate.getDay();
+  const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(currentDate.setDate(diff));
+  return monday.toISOString().split('T')[0];
+};
+
+const getMonthKey = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+const missionRewards = {
+  daily: {
+    skin: '네온 스타 스킨',
+    effectSound: '하이파이브 효과음',
+    badge: '데일리 불꽃 배지',
+  },
+  weekly: {
+    skin: '스프라이트 히어로 스킨',
+    effectSound: '퍼레이드 효과음',
+    badge: '주간 리더 배지',
+  },
+};
+
+const createMission = (type: MissionType, resetKey: string): Mission => ({
+  id: `${type}-${resetKey}`,
+  title: type === 'daily' ? '오늘의 패스' : '주간 패스',
+  description:
+    type === 'daily'
+      ? '하루에 3회 게임을 완료해요'
+      : '일주일 동안 12회 게임을 완료해요',
+  type,
+  target: type === 'daily' ? 3 : 12,
+  progress: 0,
+  completed: false,
+  reward: missionRewards[type],
+  resetKey,
+});
+
+const calculateTier = (points: number): LeagueState['tier'] => {
+  if (points >= 800) return 'diamond';
+  if (points >= 550) return 'platinum';
+  if (points >= 350) return 'gold';
+  if (points >= 180) return 'silver';
+  return 'bronze';
+};
+
+const calculateLeaguePoints = (record: GameRecord) => {
+  const baseScore = Math.max(5, Math.round(record.score / 5));
+  const speedBonus = Math.max(0, Math.round(Math.max(0, 300 - record.time) / 30));
+  const difficultyBonus =
+    record.difficulty === 'hard'
+      ? 20
+      : record.difficulty === 'medium'
+        ? 12
+        : 6;
+
+  return baseScore + speedBonus + difficultyBonus;
+};
+
+const applyProgressWindowResets = (state: GameState) => {
+  const updates: Partial<GameState> = {};
+
+  const todayKey = getDateKey();
+  const currentWeekKey = getWeekKey();
+  const currentMonthKey = getMonthKey();
+
+  if (state.dailyMission.resetKey !== todayKey) {
+    updates.dailyMission = createMission('daily', todayKey);
+  }
+
+  if (state.weeklyMission.resetKey !== currentWeekKey) {
+    updates.weeklyMission = createMission('weekly', currentWeekKey);
+  }
+
+  if (state.league.monthKey !== currentMonthKey) {
+    const finalTier = calculateTier(state.league.points);
+    const badge =
+      state.league.points > 0
+        ? {
+            monthKey: state.league.monthKey,
+            tier: finalTier,
+            awardedAt: Date.now(),
+          }
+        : undefined;
+
+    updates.league = {
+      monthKey: currentMonthKey,
+      points: 0,
+      tier: 'bronze',
+      lastBadge: badge || state.league.lastBadge,
+      badgeHistory: badge
+        ? [...state.league.badgeHistory, badge]
+        : state.league.badgeHistory,
+    };
+  }
+
+  return { normalizedState: { ...state, ...updates }, updates };
+};
+
+const incrementMissionProgress = (mission: Mission): Mission => {
+  const nextProgress = Math.min(mission.target, mission.progress + 1);
+  return {
+    ...mission,
+    progress: nextProgress,
+    completed: nextProgress >= mission.target,
+  };
+};
 
 interface GameState {
   records: GameRecord[];
-  playStreaks: Record<string, { count: number; lastPlayed: number }>;
-  bonusSkins: Record<string, string[]>;
-  latestBonus?: {
-    profileId: string;
-    streakCount: number;
-    bonusScore?: number;
-    bonusSkin?: string;
-  };
+  dailyMission: Mission;
+  weeklyMission: Mission;
+  league: LeagueState;
   addRecord: (record: GameRecord) => void;
   addHighlight: (
     highlight: Omit<
@@ -29,12 +136,7 @@ interface GameState {
   addHighlightShare: (highlightId: string) => void;
   getProfileStats: (profileId: string) => GameStats;
   getWeeklyRanking: () => { profileId: string; count: number }[];
-  getBonusStatus: (profileId: string) => {
-    streakCount: number;
-    nextUnlockIn: number;
-    unlockedSkins: string[];
-    latestBonus?: GameState['latestBonus'];
-  };
+  refreshProgress: () => void;
 }
 
 const getEndOfWeek = () => {
@@ -65,104 +167,54 @@ export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       records: [],
-      playStreaks: {},
-      bonusSkins: {},
+      dailyMission: createMission('daily', getDateKey()),
+      weeklyMission: createMission('weekly', getWeekKey()),
+      league: {
+        monthKey: getMonthKey(),
+        points: 0,
+        tier: 'bronze',
+        badgeHistory: [],
+      },
 
       addRecord: (record) => {
-        const now = Date.now();
-
         set((state) => {
-          const streakInfo = state.playStreaks[record.profileId] || {
-            count: 0,
-            lastPlayed: 0,
-          };
+          const { normalizedState, updates } = applyProgressWindowResets(state);
 
-          const withinSession = now - streakInfo.lastPlayed < 45 * 60 * 1000;
-          const streakCount = withinSession ? streakInfo.count + 1 : 1;
-          const earnedBonus = streakCount > 0 && streakCount % 3 === 0;
+          const updatedRecords = [...normalizedState.records, record];
+          const dailyMission = incrementMissionProgress(
+            normalizedState.dailyMission
+          );
+          const weeklyMission = incrementMissionProgress(
+            normalizedState.weeklyMission
+          );
 
-          const bonusScore = earnedBonus
-            ? Math.max(25, Math.round(record.score * 0.15))
-            : undefined;
-          const bonusSkin = earnedBonus
-            ? `${record.gameType}-streak-${Math.floor(streakCount / 3)}`
-            : undefined;
-
-          const enrichedRecord: GameRecord = {
-            ...record,
-            streakCount,
-            ...(bonusScore ? { bonusScore } : {}),
-            ...(bonusSkin ? { bonusSkin } : {}),
-          };
-
-          const unlockedSkins = bonusSkin
-            ? [...(state.bonusSkins[record.profileId] || []), bonusSkin]
-            : state.bonusSkins[record.profileId] || [];
-
-          const latestBonus = {
-            profileId: record.profileId,
-            streakCount,
-            bonusScore,
-            bonusSkin,
+          const pointsEarned = calculateLeaguePoints(record);
+          const newPoints = normalizedState.league.points + pointsEarned;
+          const league = {
+            ...normalizedState.league,
+            points: newPoints,
+            tier: calculateTier(newPoints),
           };
 
           return {
-            records: [...state.records, enrichedRecord],
-            playStreaks: {
-              ...state.playStreaks,
-              [record.profileId]: { count: streakCount, lastPlayed: now },
-            },
-            bonusSkins: {
-              ...state.bonusSkins,
-              [record.profileId]: unlockedSkins,
-            },
-            latestBonus,
+            ...updates,
+            records: updatedRecords,
+            dailyMission,
+            weeklyMission,
+            league,
           };
         });
       },
 
-      addHighlight: ({ id, createdAt, ...highlight }) => {
-        const highlightId = id ?? crypto.randomUUID();
-        const newHighlight: PlayHighlight = {
-          ...highlight,
-          id: highlightId,
-          createdAt: createdAt ?? Date.now(),
-          reactions: 0,
-          shares: 0,
-        };
-
-        set((state) => ({
-          highlights: [...state.highlights, newHighlight].sort(
-            (a, b) => b.createdAt - a.createdAt
-          ),
-        }));
-
-        return highlightId;
-      },
-
-      addHighlightReaction: (highlightId) => {
-        set((state) => ({
-          highlights: state.highlights.map((highlight) =>
-            highlight.id === highlightId
-              ? { ...highlight, reactions: highlight.reactions + 1 }
-              : highlight
-          ),
-        }));
-      },
-
-      addHighlightShare: (highlightId) => {
-        set((state) => ({
-          highlights: state.highlights.map((highlight) =>
-            highlight.id === highlightId
-              ? { ...highlight, shares: highlight.shares + 1 }
-              : highlight
-          ),
-        }));
-      },
-
       getProfileStats: (profileId) => {
-        const { records } = get();
-        const profileRecords = records.filter((r) => r.profileId === profileId);
+        const { normalizedState, updates } = applyProgressWindowResets(get());
+        if (Object.keys(updates).length) {
+          set(updates);
+        }
+
+        const profileRecords = normalizedState.records.filter(
+          (r) => r.profileId === profileId
+        );
 
         const bestRecords: { [key in Difficulty]?: GameRecord } = {};
 
@@ -186,7 +238,12 @@ export const useGameStore = create<GameState>()(
       },
 
       getWeeklyRanking: () => {
-        const { records } = get();
+        const { normalizedState, updates } = applyProgressWindowResets(get());
+        if (Object.keys(updates).length) {
+          set(updates);
+        }
+
+        const { records } = normalizedState;
         const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const weeklyRecords = records.filter((r) => r.completedAt > oneWeekAgo);
 
@@ -200,17 +257,8 @@ export const useGameStore = create<GameState>()(
           .sort((a, b) => b.count - a.count);
       },
 
-      getBonusStatus: (profileId) => {
-        const { playStreaks, bonusSkins, latestBonus } = get();
-        const streakCount = playStreaks[profileId]?.count ?? 0;
-        const nextUnlockIn = 3 - ((streakCount % 3) || 3);
-
-        return {
-          streakCount,
-          nextUnlockIn,
-          unlockedSkins: bonusSkins[profileId] || [],
-          latestBonus,
-        };
+      refreshProgress: () => {
+        set((state) => applyProgressWindowResets(state).updates);
       },
     }),
     {

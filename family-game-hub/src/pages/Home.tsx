@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
@@ -14,17 +14,34 @@ import { useEffect, useMemo, useState } from 'react';
 export const Home = () => {
   const navigate = useNavigate();
   const { profiles, currentProfileId } = useProfileStore();
-  const getProfileStats = useGameStore((state) => state.getProfileStats);
-  const getWeeklyRanking = useGameStore((state) => state.getWeeklyRanking);
-  const recentHighlights = useGameStore((state) => state.getRecentHighlights());
-  const weeklySummary = useGameStore((state) => state.getWeeklyHighlightSummary());
-  const addHighlightReaction = useGameStore((state) => state.addHighlightReaction);
+  const {
+    getProfileStats,
+    getWeeklyRanking,
+    dailyMission,
+    weeklyMission,
+    league,
+    refreshProgress,
+  } = useGameStore();
 
-  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  useEffect(() => {
+    refreshProgress();
+  }, [refreshProgress]);
 
   const currentProfile = profiles.find((p) => p.id === currentProfileId);
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
+  const dailyProgress = Math.round(
+    Math.min(100, (dailyMission.progress / dailyMission.target) * 100)
+  );
+  const weeklyRemaining = Math.max(0, weeklyMission.target - weeklyMission.progress);
+
+  const tierIcons: Record<string, string> = {
+    bronze: '🥉',
+    silver: '🥈',
+    gold: '🥇',
+    platinum: '💎',
+    diamond: '👑',
+  };
 
   const recentHighlightCards = useMemo(
     () => recentHighlights.slice(0, 5),
@@ -58,6 +75,62 @@ export const Home = () => {
       />
 
       <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* 오늘의 패스 */}
+        <Card className="bg-gradient-to-r from-primary to-secondary text-white shadow-lg">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-4 flex-1">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🔥</span>
+                <div>
+                  <p className="text-sm text-white/80">오늘의 패스</p>
+                  <h3 className="text-2xl font-bold">{dailyMission.description}</h3>
+                </div>
+              </div>
+
+              <div className="bg-white/30 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-white"
+                  style={{ width: `${dailyProgress}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-sm font-semibold">
+                <span>
+                  {dailyMission.progress}/{dailyMission.target}회 완료
+                </span>
+                <span className="text-white/90">
+                  {dailyMission.completed
+                    ? '보상 받을 준비 완료!'
+                    : `남은 목표 ${dailyMission.target - dailyMission.progress}회`}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span className="bg-white/20 px-3 py-1 rounded-full">
+                  🎭 스킨: {dailyMission.reward.skin}
+                </span>
+                <span className="bg-white/20 px-3 py-1 rounded-full">
+                  🎵 효과음: {dailyMission.reward.effectSound}
+                </span>
+                <span className="bg-white/20 px-3 py-1 rounded-full">
+                  🛡 배지: {dailyMission.reward.badge}
+                </span>
+              </div>
+
+              <p className="text-xs text-white/80">
+                주간 패스 {weeklyMission.progress}/{weeklyMission.target} 진행 중 · 남은 목표
+                {` ${weeklyRemaining}회`}
+              </p>
+            </div>
+
+            <div className="bg-white/15 text-center rounded-2xl px-4 py-5 min-w-[140px]">
+              <p className="text-sm text-white/80">가족 리그</p>
+              <div className="text-4xl my-1">{tierIcons[league.tier]}</div>
+              <p className="text-xl font-bold">{league.tier.toUpperCase()}</p>
+              <p className="text-xs text-white/70 mt-1">이번 달 포인트 {league.points}</p>
+            </div>
+          </div>
+        </Card>
+
         {/* 프로필 선택 또는 게스트 안내 */}
         {profiles.length > 0 ? (
           <div className="flex justify-between items-center">
@@ -509,6 +582,31 @@ export const Home = () => {
             </div>
           </Card>
         )}
+
+        {/* 가족 리그 현황 */}
+        <Card>
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm text-gray-500">월간 가족 리그</p>
+              <h3 className="text-xl font-bold text-textDark">
+                {tierIcons[league.tier]} 현재 티어: {league.tier.toUpperCase()}
+              </h3>
+              <p className="text-sm text-gray-600">
+                이번 달 누적 포인트 <span className="text-primary font-semibold">{league.points}</span>
+              </p>
+              <p className="text-xs text-gray-500">매월 1일 00시에 리셋되며 티어별 한정 배지가 지급돼요.</p>
+              {league.lastBadge && (
+                <p className="text-xs text-success">
+                  지난 {league.lastBadge.monthKey}에 {league.lastBadge.tier.toUpperCase()} 배지를 획득했어요!
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-4xl">{tierIcons[league.tier]}</div>
+              <div className="text-sm text-gray-500">점수로 티어 승급</div>
+            </div>
+          </div>
+        </Card>
 
         {/* 통계 */}
         {stats && stats.totalGames > 0 && (
