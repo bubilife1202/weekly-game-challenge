@@ -6,15 +6,33 @@ import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
 import { AdSense } from '../components/common/AdSense';
+import { useEffect, useMemo, useState } from 'react';
 
 export const Home = () => {
   const navigate = useNavigate();
   const { profiles, currentProfileId } = useProfileStore();
-  const { getProfileStats, getWeeklyRanking } = useGameStore();
+  const getProfileStats = useGameStore((state) => state.getProfileStats);
+  const getWeeklyRanking = useGameStore((state) => state.getWeeklyRanking);
+  const recentHighlights = useGameStore((state) => state.getRecentHighlights());
+  const weeklySummary = useGameStore((state) => state.getWeeklyHighlightSummary());
+  const addHighlightReaction = useGameStore((state) => state.addHighlightReaction);
+
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
 
   const currentProfile = profiles.find((p) => p.id === currentProfileId);
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
+
+  const recentHighlightCards = useMemo(
+    () => recentHighlights.slice(0, 5),
+    [recentHighlights]
+  );
+
+  useEffect(() => {
+    if (weeklySummary) {
+      setShowWeeklyReport(true);
+    }
+  }, [weeklySummary?.highlight.id]);
 
   // 버전 정보
   const version = import.meta.env.VITE_APP_VERSION || '1.0.0';
@@ -309,6 +327,60 @@ export const Home = () => {
         {/* 광고 영역 */}
         <AdSense className="my-6" />
 
+        {/* 가족 피드 */}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-textDark">👪 가족 피드</h3>
+            <span className="text-sm text-gray-500">
+              최근 하이라이트 {recentHighlightCards.length}건
+            </span>
+          </div>
+
+          {recentHighlightCards.length === 0 ? (
+            <p className="text-gray-600 text-sm">아직 공유된 하이라이트가 없어요.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentHighlightCards.map((highlight) => {
+                const profile = profiles.find((p) => p.id === highlight.profileId);
+                return (
+                  <div
+                    key={highlight.id}
+                    className="flex items-center gap-3 bg-background rounded-xl p-3"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white shadow flex items-center justify-center text-2xl">
+                      {profile?.emoji ?? '🎮'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-textDark">
+                          {profile?.name ?? '게스트'}
+                        </span>
+                        <span className="text-xs text-gray-500">{highlight.gameType}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        점수 {highlight.score} • 플레이 {highlight.playTime}초
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(highlight.createdAt).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">👏 {highlight.reactions}</span>
+                      <Button
+                        size="small"
+                        variant="success"
+                        onClick={() => addHighlightReaction(highlight.id)}
+                      >
+                        박수 보내기
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
         {/* 주간 랭킹 */}
         {ranking.length > 0 && (
           <Card>
@@ -372,6 +444,49 @@ export const Home = () => {
           <p className="text-xs mt-1">© 2025 All rights reserved</p>
         </div>
       </div>
+
+      {/* 이번 주 최고 기록 팝업 */}
+      {showWeeklyReport && weeklySummary && (
+        <div className="fixed inset-0 bg-black/30 flex items-end justify-center p-4 z-40">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-bold text-textDark">이번 주 최고 기록</h4>
+              <button
+                onClick={() => setShowWeeklyReport(false)}
+                className="text-xl leading-none"
+                aria-label="주간 리포트 닫기"
+              >
+                ✖️
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-background rounded-xl p-4">
+              <div className="w-14 h-14 rounded-full bg-white shadow flex items-center justify-center text-3xl">
+                {
+                  profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
+                    emoji ?? '🌟'
+                }
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-textDark">
+                  {
+                    profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
+                      name ?? '게스트'
+                  }
+                </div>
+                <div className="text-sm text-gray-600">
+                  {weeklySummary.highlight.gameType} • 점수 {weeklySummary.highlight.score}
+                </div>
+                <div className="text-xs text-gray-500">
+                  공유 {weeklySummary.totalShares}회 · 반응 {weeklySummary.totalReactions}회
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">
+              가족들의 공유와 반응을 모아 이번 주 최고 기록을 보여드려요!
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
