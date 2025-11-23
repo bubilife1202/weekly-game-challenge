@@ -83,6 +83,25 @@ export interface GameStats {
   recentGames: GameRecord[];
 }
 
+// 플레이 하이라이트
+export interface PlayHighlight {
+  id: string;
+  profileId: string;
+  gameType: GameRecord['gameType'];
+  score: number;
+  playTime: number;
+  screenshotPath?: string;
+  reactions: number;
+  shares: number;
+  createdAt: number;
+}
+
+export interface WeeklyHighlightSummary {
+  highlight: PlayHighlight;
+  totalReactions: number;
+  totalShares: number;
+}
+
 // 카드 테마
 export type CardTheme = 'animals' | 'fruits' | 'emojis' | 'vehicles';
 
