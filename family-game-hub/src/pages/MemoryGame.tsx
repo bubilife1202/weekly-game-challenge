@@ -25,6 +25,7 @@ export const MemoryGame = () => {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [sharedHighlightId, setSharedHighlightId] = useState<string | null>(null);
 
   const timeoutRef = useRef<number | null>(null);
 
@@ -71,6 +72,7 @@ export const MemoryGame = () => {
         };
 
         addRecord(record);
+        setSharedHighlightId(null);
       }
 
       const resultTimeout = setTimeout(() => setShowResult(true), 500);
@@ -302,6 +304,22 @@ export const MemoryGame = () => {
         missions={[dailyMission, weeklyMission]}
         onPlayAgain={handlePlayAgain}
         onGoHome={handleGoHome}
+        onShare={() => {
+          if (!currentProfileId || !startTime || !endTime || !difficulty) return;
+          const playTime = Math.floor((endTime - startTime) / 1000);
+          const highlightId =
+            sharedHighlightId ??
+            addHighlight({
+              profileId: currentProfileId,
+              gameType: 'memory',
+              score: matchedPairs,
+              playTime,
+              screenshotPath: '/og-template.svg',
+            });
+
+          addHighlightShare(highlightId);
+          setSharedHighlightId(highlightId);
+        }}
       />
     </div>
   );

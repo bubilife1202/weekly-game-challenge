@@ -126,10 +126,42 @@ interface GameState {
   weeklyMission: Mission;
   league: LeagueState;
   addRecord: (record: GameRecord) => void;
+  addHighlight: (
+    highlight: Omit<
+      PlayHighlight,
+      'id' | 'createdAt' | 'reactions' | 'shares'
+    > & { id?: string; createdAt?: number }
+  ) => string;
+  addHighlightReaction: (highlightId: string) => void;
+  addHighlightShare: (highlightId: string) => void;
   getProfileStats: (profileId: string) => GameStats;
   getWeeklyRanking: () => { profileId: string; count: number }[];
   refreshProgress: () => void;
 }
+
+const getEndOfWeek = () => {
+  const now = new Date();
+  const day = now.getDay();
+  const daysUntilSunday = day === 0 ? 7 : 7 - day;
+  const endOfWeek = new Date(now);
+  endOfWeek.setDate(now.getDate() + daysUntilSunday);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  return endOfWeek.getTime();
+};
+
+const createDefaultWeeklyChallenge = (): WeeklyChallenge => {
+  const deadline = getEndOfWeek();
+  const deadlineDate = new Date(deadline);
+
+  return {
+    mission: '가족이 함께 3회 게임 플레이 달성',
+    deadline,
+    rewardStamp: `family-trophy-${deadlineDate.getFullYear()}-${deadlineDate.getMonth() + 1}-${deadlineDate.getDate()}`,
+    targetPlays: 3,
+    rewardClaimed: false,
+  };
+};
 
 export const useGameStore = create<GameState>()(
   persist(

@@ -12,6 +12,7 @@ interface ResultModalProps {
   missions: Mission[];
   onPlayAgain: () => void;
   onGoHome: () => void;
+  onShare?: () => void;
 }
 
 export const ResultModal = ({
@@ -23,6 +24,7 @@ export const ResultModal = ({
   missions,
   onPlayAgain,
   onGoHome,
+  onShare,
 }: ResultModalProps) => {
   const missionProgress = missions.map((mission) => ({
     ...mission,
@@ -143,6 +145,15 @@ export const ResultModal = ({
 
               {/* 버튼 */}
               <div className="space-y-3 pt-4">
+                <Button
+                  variant="success"
+                  size="large"
+                  fullWidth
+                  onClick={onShare}
+                  disabled={!onShare}
+                >
+                  결과 공유
+                </Button>
                 <Button variant="primary" size="large" fullWidth onClick={onPlayAgain}>
                   다시하기
                 </Button>

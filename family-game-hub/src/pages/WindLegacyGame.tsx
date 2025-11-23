@@ -27,6 +27,8 @@ import {
 } from '../utils/windlegacy';
 import { useGameStore } from '../store/gameStore';
 import { useProfileStore } from '../store/profileStore';
+import { useSettingsStore } from '../store/settingsStore';
+import { QuickRulesCard } from '../components/common/QuickRulesCard';
 
 export const WindLegacyGame = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -35,8 +37,10 @@ export const WindLegacyGame = () => {
   const keysPressed = useRef<Set<string>>(new Set());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const lastFrameRef = useRef<number | null>(null);
   const [gameSize, setGameSize] = useState({ width: 1000, height: 600 });
   const [isMobile, setIsMobile] = useState(false);
+  const [playCount, setPlayCount] = useState(0);
 
   // 모바일 조이스틱 상태
   const [joystickActive, setJoystickActive] = useState(false);
@@ -46,6 +50,8 @@ export const WindLegacyGame = () => {
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
+  const { targetFps, lowPerformanceMode, toggleLowPerformanceMode, setTargetFps } =
+    useSettingsStore();
 
   // 모바일 감지 및 게임 크기 조정
   useEffect(() => {
@@ -80,56 +86,86 @@ export const WindLegacyGame = () => {
     setGameState(initialState);
     setShowInstructions(false);
     setIsPaused(false);
+    setPlayCount((count) => count + 1);
+    lastFrameRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (isPaused) {
+      lastFrameRef.current = null;
+    }
+  }, [isPaused]);
 
   // 게임 루프
   useEffect(() => {
     if (!gameState || gameState.gameOver || gameState.won || isPaused) return;
 
-    const gameLoop = setInterval(() => {
-      setGameState((prevState) => {
-        if (!prevState) return prevState;
+    const frameDuration = (1000 / targetFps) * (lowPerformanceMode ? 1.3 : 1);
 
-        let newState = { ...prevState };
+    const loop = (time: number) => {
+      if (!lastFrameRef.current) {
+        lastFrameRef.current = time;
+      }
 
-        // 플레이어 이동
-        if (keysPressed.current.has('ArrowLeft') || keysPressed.current.has('a') || currentDirection === 'left') {
-          newState = movePlayer(newState, 'left');
-        }
-        if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('d') || currentDirection === 'right') {
-          newState = movePlayer(newState, 'right');
-        }
+      const delta = time - lastFrameRef.current;
+      if (delta >= frameDuration) {
+        lastFrameRef.current = time;
 
-        // 물리 업데이트
-        newState = updatePhysics(newState);
+        setGameState((prevState) => {
+          if (!prevState) return prevState;
 
-        // 이동 플랫폼 업데이트
-        newState = updateMovingPlatforms(newState);
+          let newState = { ...prevState };
 
-        // 적 업데이트
-        newState = updateEnemies(newState);
+          // 플레이어 이동
+          if (keysPressed.current.has('ArrowLeft') || keysPressed.current.has('a') || currentDirection === 'left') {
+            newState = movePlayer(newState, 'left');
+          }
+          if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('d') || currentDirection === 'right') {
+            newState = movePlayer(newState, 'right');
+          }
 
-        // 압력판 체크
-        newState = checkPressurePlates(newState);
+          // 물리 업데이트
+          newState = updatePhysics(newState);
 
-        // 문 업데이트
-        newState = updateDoors(newState);
+          // 이동 플랫폼 업데이트
+          newState = updateMovingPlatforms(newState);
 
-        // 충돌 감지
-        newState = checkCollisions(newState);
+          // 적 업데이트
+          newState = updateEnemies(newState);
 
-        // 히스토리 기록
-        newState = recordHistory(newState);
+          // 압력판 체크
+          newState = checkPressurePlates(newState);
 
-        // 되감기 에너지 회복
-        newState = rechargeRewindEnergy(newState);
+          // 문 업데이트
+          newState = updateDoors(newState);
 
-        return newState;
-      });
-    }, 1000 / 60);
+          // 충돌 감지
+          newState = checkCollisions(newState);
 
-    return () => clearInterval(gameLoop);
-  }, [isPaused, currentProfileId, currentDirection, gameState?.gameOver, gameState?.won]);
+          // 히스토리 기록
+          newState = recordHistory(newState);
+
+          // 되감기 에너지 회복
+          newState = rechargeRewindEnergy(newState);
+
+          return newState;
+        });
+      }
+
+      requestAnimationFrame(loop);
+    };
+
+    const frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [
+    isPaused,
+    currentProfileId,
+    currentDirection,
+    gameState?.gameOver,
+    gameState?.won,
+    targetFps,
+    lowPerformanceMode,
+  ]);
 
   // 키보드 입력
   useEffect(() => {
@@ -448,7 +484,55 @@ export const WindLegacyGame = () => {
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 pb-8">
         <Header title="바람의 유산" />
         <main className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-8">
+          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-xl p-8 space-y-4">
+            <QuickRulesCard
+              title="15초 규칙 카드"
+              subtitle="2회 플레이 후 자동 축소"
+              playCount={playCount}
+              accentEmoji="🌪️"
+              rules={[
+                '좌우 이동과 점프/대시로 플랫폼을 넘으세요.',
+                'E키(또는 버튼)로 메아리 분신을 소환해 압력판을 눌러요.',
+                '3판 연속으로 달리면 추가 점수와 전용 스킨이 열립니다.',
+              ]}
+              tips={[
+                `${targetFps}fps로 애니메이션을 부드럽게 유지`,
+                '저성능 모드는 발판/적 이동이 한テン포 느긋해집니다.',
+              ]}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-indigo-50 rounded-xl p-3 shadow flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs text-indigo-500">목표 프레임</div>
+                  <div className="font-bold text-indigo-900">{targetFps} fps</div>
+                </div>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  animated
+                  onClick={() => setTargetFps(targetFps === 60 ? 50 : 60)}
+                >
+                  {targetFps === 60 ? '50fps 절전' : '60fps로'}
+                </Button>
+              </div>
+
+              <div className="bg-indigo-50 rounded-xl p-3 shadow flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs text-indigo-500">저성능 모드</div>
+                  <div className="font-bold text-indigo-900">{lowPerformanceMode ? 'ON' : 'OFF'}</div>
+                </div>
+                <Button
+                  size="small"
+                  variant={lowPerformanceMode ? 'secondary' : 'primary'}
+                  animated
+                  onClick={toggleLowPerformanceMode}
+                >
+                  {lowPerformanceMode ? '해제' : '켜기'}
+                </Button>
+              </div>
+            </div>
+
             <h2 className="text-3xl font-bold mb-6 text-center text-indigo-800">
               바람의 유산: 자하라의 메아리
             </h2>
@@ -521,6 +605,52 @@ export const WindLegacyGame = () => {
       <Header title="바람의 유산" />
       <main className="container mx-auto px-4 py-4">
         <div className="max-w-6xl mx-auto">
+          <div className="mb-4 space-y-3">
+            <QuickRulesCard
+              title="빠른 규칙 카드"
+              subtitle="15초 후 자동 축소"
+              playCount={playCount}
+              accentEmoji="🌀"
+              rules={['이동/점프/대시로 지형을 돌파', 'E키나 버튼으로 메아리 분신 생성', '3판 연속 달성 시 보너스 점수·스킨 지급']}
+              tips={[
+                `${targetFps}fps 목표로 애니메이션 유지`,
+                lowPerformanceMode ? '저성능: 플랫폼 속도가 살짝 완만해요.' : '고성능: 정밀 조작 최적화',
+              ]}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-indigo-50 rounded-xl p-3 shadow flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs text-indigo-500">목표 프레임</div>
+                  <div className="font-bold text-indigo-900">{targetFps} fps</div>
+                </div>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  animated
+                  onClick={() => setTargetFps(targetFps === 60 ? 50 : 60)}
+                >
+                  {targetFps === 60 ? '50fps 절전' : '60fps로'}
+                </Button>
+              </div>
+
+              <div className="bg-indigo-50 rounded-xl p-3 shadow flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs text-indigo-500">저성능 모드</div>
+                  <div className="font-bold text-indigo-900">{lowPerformanceMode ? 'ON' : 'OFF'}</div>
+                </div>
+                <Button
+                  size="small"
+                  variant={lowPerformanceMode ? 'secondary' : 'primary'}
+                  animated
+                  onClick={toggleLowPerformanceMode}
+                >
+                  {lowPerformanceMode ? '해제' : '켜기'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg shadow-xl p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-indigo-800">바람의 유산</h2>
@@ -529,6 +659,7 @@ export const WindLegacyGame = () => {
                   onClick={() => setIsPaused(!isPaused)}
                   variant="secondary"
                   className="px-4 py-2"
+                  animated
                 >
                   {isPaused ? '계속' : '일시정지'}
                 </Button>
@@ -539,6 +670,7 @@ export const WindLegacyGame = () => {
                   }}
                   variant="secondary"
                   className="px-4 py-2"
+                  animated
                 >
                   처음으로
                 </Button>
@@ -621,47 +753,52 @@ export const WindLegacyGame = () => {
               <div className="mt-4 space-y-2">
                 {/* 첫 번째 줄: 이동 관련 */}
                 <div className="flex gap-2">
+                <Button
+                  onClick={handleMobileJump}
+                  className="flex-1 py-4 text-xl font-bold"
+                  disabled={!gameState.player.onGround}
+                  animated
+                >
+                  ⬆️ 점프
+                </Button>
                   <Button
-                    onClick={handleMobileJump}
-                    className="flex-1 py-4 text-xl font-bold"
-                    disabled={!gameState.player.onGround}
-                  >
-                    ⬆️ 점프
-                  </Button>
-                  <Button
-                    onClick={handleMobileDash}
-                    className="flex-1 py-4 text-xl font-bold"
-                    variant="secondary"
-                    disabled={!gameState.abilities.airDash || !gameState.player.canAirDash || gameState.player.dashCooldown > 0}
-                  >
-                    💨 대시
-                  </Button>
+                  onClick={handleMobileDash}
+                  className="flex-1 py-4 text-xl font-bold"
+                  variant="secondary"
+                  disabled={!gameState.abilities.airDash || !gameState.player.canAirDash || gameState.player.dashCooldown > 0}
+                  animated
+                >
+                  💨 대시
+                </Button>
                 </div>
 
                 {/* 두 번째 줄: 능력 */}
                 <div className="flex gap-2">
                   <Button
-                    onClick={handleMobileEcho}
-                    className="flex-1 py-4 text-xl font-bold"
-                    variant="secondary"
-                  >
-                    👤 메아리
-                  </Button>
-                  <Button
-                    onClick={handleMobilePurify}
-                    className="flex-1 py-4 text-xl font-bold"
-                    variant="secondary"
-                  >
-                    😇 정화
-                  </Button>
-                  <Button
-                    onClick={handleMobileRewind}
-                    className="flex-1 py-4 text-xl font-bold"
-                    variant="secondary"
-                    disabled={gameState.rewindEnergy < 30}
-                  >
-                    ⏪ 되감기
-                  </Button>
+                  onClick={handleMobileEcho}
+                  className="flex-1 py-4 text-xl font-bold"
+                  variant="secondary"
+                  animated
+                >
+                  👤 메아리
+                </Button>
+                <Button
+                  onClick={handleMobilePurify}
+                  className="flex-1 py-4 text-xl font-bold"
+                  variant="secondary"
+                  animated
+                >
+                  😇 정화
+                </Button>
+                <Button
+                  onClick={handleMobileRewind}
+                  className="flex-1 py-4 text-xl font-bold"
+                  variant="secondary"
+                  disabled={gameState.rewindEnergy < 30}
+                  animated
+                >
+                  ⏪ 되감기
+                </Button>
                 </div>
               </div>
             )}
