@@ -1,20 +1,150 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
 import { AdSense } from '../components/common/AdSense';
 
+const weeklyRecommendations = [
+  {
+    id: 'memory',
+    title: '카드 뒤집기',
+    icon: '🃏',
+    description: '난이도별 기억력 향상 미션',
+    difficulty: 'easy' as const,
+    age: '6세+',
+    playTime: '5~10분',
+  },
+  {
+    id: 'maze',
+    title: '미로 찾기',
+    icon: '🌟',
+    description: '길을 찾으며 공간지각력 키우기',
+    difficulty: 'medium' as const,
+    age: '8세+',
+    playTime: '5~10분',
+  },
+  {
+    id: '2048',
+    title: '2048',
+    icon: '🔢',
+    description: '숫자를 합쳐 목표 점수 도전',
+    difficulty: 'hard' as const,
+    age: '10세+',
+    playTime: '5~10분',
+  },
+];
+
 export const Home = () => {
   const navigate = useNavigate();
   const { profiles, currentProfileId } = useProfileStore();
-  const { getProfileStats, getWeeklyRanking } = useGameStore();
+  const {
+    getProfileStats,
+    getWeeklyRanking,
+    weeklyChallenge,
+    refreshWeeklyChallenge,
+    getWeeklyChallengeProgress,
+    claimWeeklyReward,
+  } = useGameStore();
+  const { soundEnabled, volume } = useSettingsStore();
+  const [now, setNow] = useState(Date.now());
+  const [showTrophyCelebration, setShowTrophyCelebration] = useState(false);
+  const celebrationTimeoutRef = useRef<number | undefined>();
 
   const currentProfile = profiles.find((p) => p.id === currentProfileId);
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
+
+  useEffect(() => {
+    refreshWeeklyChallenge();
+  }, [refreshWeeklyChallenge]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (celebrationTimeoutRef.current) {
+        window.clearTimeout(celebrationTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (now > weeklyChallenge.deadline) {
+      refreshWeeklyChallenge();
+    }
+  }, [now, refreshWeeklyChallenge, weeklyChallenge.deadline]);
+
+  const challengeProgress = useMemo(
+    () => getWeeklyChallengeProgress(),
+    [getWeeklyChallengeProgress, now]
+  );
+
+  const challengeCompleted = challengeProgress.isCompleted;
+  const remainingMs = Math.max(weeklyChallenge.deadline - now, 0);
+
+  const remainingTimeText = useMemo(() => {
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const days = Math.floor(totalSeconds / (60 * 60 * 24));
+    const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+    const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+
+    if (days > 0) return `${days}일 ${hours}시간`;
+    if (hours > 0) return `${hours}시간 ${minutes}분`;
+    return `${minutes}분 남음`;
+  }, [remainingMs]);
+
+  const playTrophySound = useCallback(() => {
+    if (!soundEnabled) return;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const context = new AudioContextClass();
+    const duration = 0.65;
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(660, context.currentTime);
+    oscillator.frequency.linearRampToValueAtTime(990, context.currentTime + duration);
+    gainNode.gain.setValueAtTime(Math.min(Math.max(volume, 0), 1) * 0.5, context.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+    oscillator.onended = () => context.close();
+  }, [soundEnabled, volume]);
+
+  const triggerTrophyCelebration = useCallback(() => {
+    setShowTrophyCelebration(true);
+    playTrophySound();
+    if (celebrationTimeoutRef.current) {
+      window.clearTimeout(celebrationTimeoutRef.current);
+    }
+    celebrationTimeoutRef.current = window.setTimeout(
+      () => setShowTrophyCelebration(false),
+      2200
+    );
+  }, [playTrophySound]);
+
+  const handleClaimReward = () => {
+    if (!challengeCompleted || weeklyChallenge.rewardClaimed) return;
+    claimWeeklyReward();
+    triggerTrophyCelebration();
+  };
 
   // 버전 정보
   const version = import.meta.env.VITE_APP_VERSION || '1.0.0';
@@ -64,6 +194,132 @@ export const Home = () => {
             </div>
           </Card>
         )}
+
+        {/* 이번 주 가족 챌린지 */}
+        <Card
+          badgeLabel="WEEKLY"
+          difficulty="family"
+          playTime="5~10분"
+          className="overflow-hidden"
+        >
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600">이번 주 가족 챌린지</p>
+                <h3 className="text-2xl font-bold text-textDark">
+                  {weeklyChallenge.mission}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  보상 스탬프: {weeklyChallenge.rewardStamp}
+                </p>
+              </div>
+              <div className="bg-secondary/10 text-secondary border border-secondary/20 rounded-xl px-4 py-3 text-right">
+                <p className="text-xs uppercase tracking-wide font-semibold">남은 시간</p>
+                <p className="text-lg font-bold">{remainingTimeText}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-gray-700">
+                <span>진행도</span>
+                <span className="font-semibold">
+                  {challengeProgress.count} / {challengeProgress.target}
+                </span>
+              </div>
+              <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      (challengeProgress.count / challengeProgress.target) * 100,
+                      100
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                🏷️ 이번 주 추천 게임을 플레이하고 트로피를 모아보세요.
+              </p>
+              <div className="flex items-center gap-3">
+                {weeklyChallenge.rewardClaimed && (
+                  <span className="text-green-600 font-semibold flex items-center gap-2">
+                    🏆 가족 트로피 지급 완료
+                  </span>
+                )}
+                {!weeklyChallenge.rewardClaimed && (
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={handleClaimReward}
+                    disabled={!challengeCompleted}
+                  >
+                    {challengeCompleted ? '가족 트로피 받기' : '미션 진행 중'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {showTrophyCelebration && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="bg-gradient-to-r from-yellow-100 to-amber-100 border border-amber-200 rounded-xl p-4 flex items-center gap-3 shadow-inner"
+                >
+                  <motion.span
+                    initial={{ scale: 0.6, rotate: -10 }}
+                    animate={{ scale: 1.1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 12 }}
+                    className="text-3xl"
+                  >
+                    🏆
+                  </motion.span>
+                  <div>
+                    <p className="text-sm text-amber-800 font-semibold">가족 트로피 지급 완료!</p>
+                    <p className="text-xs text-amber-700">설정된 사운드와 함께 축하드려요 🎉</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </Card>
+
+        {/* 이번 주 추천 게임 */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-textDark">이번 주 가족 추천</h2>
+            <span className="text-sm text-gray-500">연령과 난이도에 맞춘 5~10분 코스</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {weeklyRecommendations.map((game) => (
+              <Card
+                key={game.id}
+                onClick={() => navigate(`/game/${game.id}`)}
+                badgeLabel="추천"
+                difficulty={game.difficulty}
+                playTime={game.playTime}
+              >
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{game.icon}</span>
+                    <div>
+                      <h3 className="text-lg font-bold text-textDark">{game.title}</h3>
+                      <p className="text-sm text-gray-600">{game.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>권장 연령: {game.age}</span>
+                    <span>예상 플레이: {game.playTime}</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
 
         {/* 게임 목록 */}
         <div className="space-y-4">
