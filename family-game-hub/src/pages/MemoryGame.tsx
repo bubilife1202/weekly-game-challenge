@@ -13,7 +13,8 @@ import { Button } from '../components/common/Button';
 export const MemoryGame = () => {
   const navigate = useNavigate();
   const { currentProfileId } = useProfileStore();
-  const { addRecord, getProfileStats } = useGameStore();
+  const { addRecord, getProfileStats, dailyMission, weeklyMission } =
+    useGameStore();
 
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [cards, setCards] = useState<CardType[]>([]);
@@ -298,6 +299,7 @@ export const MemoryGame = () => {
         attempts={attempts}
         accuracy={accuracy}
         isNewRecord={isNewRecord}
+        missions={[dailyMission, weeklyMission]}
         onPlayAgain={handlePlayAgain}
         onGoHome={handleGoHome}
       />

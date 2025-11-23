@@ -41,6 +41,44 @@ export interface GameStats {
   recentGames: GameRecord[];
 }
 
+// 미션
+export type MissionType = 'daily' | 'weekly';
+
+export interface MissionReward {
+  skin: string;
+  effectSound: string;
+  badge: string;
+}
+
+export interface Mission {
+  id: string;
+  title: string;
+  description: string;
+  type: MissionType;
+  target: number;
+  progress: number;
+  completed: boolean;
+  reward: MissionReward;
+  resetKey: string;
+}
+
+// 리그 티어
+export type LeagueTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
+export interface LeagueBadge {
+  monthKey: string;
+  tier: LeagueTier;
+  awardedAt: number;
+}
+
+export interface LeagueState {
+  monthKey: string;
+  points: number;
+  tier: LeagueTier;
+  lastBadge?: LeagueBadge;
+  badgeHistory: LeagueBadge[];
+}
+
 // 카드 테마
 export type CardTheme = 'animals' | 'fruits' | 'emojis' | 'vehicles';
 

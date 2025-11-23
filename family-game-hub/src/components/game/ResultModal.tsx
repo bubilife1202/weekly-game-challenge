@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../common/Button';
 import { formatTime } from '../../utils/helpers';
+import type { Mission } from '../../types';
 
 interface ResultModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface ResultModalProps {
   attempts: number;
   accuracy: number;
   isNewRecord: boolean;
+  missions: Mission[];
   onPlayAgain: () => void;
   onGoHome: () => void;
 }
@@ -18,9 +20,16 @@ export const ResultModal = ({
   attempts,
   accuracy,
   isNewRecord,
+  missions,
   onPlayAgain,
   onGoHome,
 }: ResultModalProps) => {
+  const missionProgress = missions.map((mission) => ({
+    ...mission,
+    percent: Math.round(Math.min(100, (mission.progress / mission.target) * 100)),
+    remaining: Math.max(0, mission.target - mission.progress),
+  }));
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -75,6 +84,48 @@ export const ResultModal = ({
                   <span className="text-2xl font-bold text-success">
                     {accuracy}%
                   </span>
+                </div>
+              </div>
+
+              {/* 미션 진행도 */}
+              <div className="space-y-3 bg-background rounded-xl p-6 border border-primary/10">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎯</span>
+                  <h3 className="text-lg font-bold text-textDark">미션 현황</h3>
+                </div>
+                <div className="space-y-3">
+                  {missionProgress.map((mission) => (
+                    <div key={mission.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">
+                            {mission.type === 'daily' ? '🔥 오늘의 패스' : '📅 주간 패스'}
+                          </span>
+                          <span className="text-gray-600">{mission.description}</span>
+                        </div>
+                        <span
+                          className={
+                            mission.completed
+                              ? 'text-success font-semibold'
+                              : 'text-warning font-semibold'
+                          }
+                        >
+                          {mission.progress}/{mission.target}
+                        </span>
+                      </div>
+                      <div className="bg-white/70 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${mission.percent}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {mission.completed
+                          ? `보상 준비 완료 - 스킨 ${mission.reward.skin}, 효과음 ${mission.reward.effectSound}, 배지 ${mission.reward.badge}`
+                          : `다음 목표까지 ${mission.remaining}회 더 플레이하면 보상: ${mission.reward.badge}`}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
