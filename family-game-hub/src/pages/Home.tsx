@@ -1,6 +1,9 @@
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
@@ -79,6 +82,98 @@ export const Home = () => {
               >
                 프로필 만들기
               </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* 맞춤 추천 */}
+        {currentProfile && (
+          <Card className="bg-gradient-to-r from-primary/5 to-secondary/5">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">🎯</span>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-textDark">맞춤 추천</h3>
+                  <span className="text-xs text-gray-500">{currentProfile.name} 전용</span>
+                </div>
+                {recommendations.length > 0 ? (
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {recommendations.map((game) => (
+                      <button
+                        key={game.id}
+                        onClick={() => navigate(game.path)}
+                        className="flex items-start gap-3 rounded-xl border border-primary/20 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <span className="text-2xl">{game.emoji}</span>
+                        <div>
+                          <div className="font-semibold text-textDark">{game.title}</div>
+                          <p className="text-xs text-gray-600 leading-snug">{game.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    프로필 선호도를 더 설정하면 맞춤 게임을 추천해드릴게요.
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* 가족 미션 */}
+        {currentProfile && currentProfile.missions && (
+          <Card>
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">🗓️</span>
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-textDark">이번 주 가족 미션</h3>
+                  <span className="text-xs text-gray-500">협동 · 경쟁 · 학습</span>
+                </div>
+                <div className="space-y-2">
+                  {currentProfile.missions.map((mission) => (
+                    <div
+                      key={mission.id}
+                      className="flex items-start gap-3 rounded-xl bg-background p-3"
+                    >
+                      <div className="text-2xl">
+                        {mission.category === 'cooperative'
+                          ? '🤝'
+                          : mission.category === 'competitive'
+                            ? '🏁'
+                            : '📚'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-textDark">{mission.title}</div>
+                            <p className="text-sm text-gray-600">{mission.description}</p>
+                          </div>
+                          {mission.completed && (
+                            <span className="text-sm text-secondary font-semibold">완료!</span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <span>{mission.rewardBadge.emoji}</span>
+                            <span>{mission.rewardBadge.name} 배지</span>
+                          </div>
+                          <Button
+                            variant={mission.completed ? 'secondary' : 'primary'}
+                            size="small"
+                            onClick={() => completeMission(currentProfile.id, mission.id)}
+                            disabled={mission.completed}
+                          >
+                            {mission.completed ? '완료됨' : '완료 표시'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </Card>
         )}
