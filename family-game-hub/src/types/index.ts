@@ -6,6 +6,48 @@ export interface Profile {
   age?: number;
   color: string;
   createdAt: number;
+  preferences?: GamePreference;
+  badges?: ProfileBadge[];
+  missions?: FamilyMission[];
+  lastMissionGeneratedAt?: number;
+}
+
+export type AgeGroup = 'kids' | 'teens' | 'family';
+
+export type GameCategory =
+  | 'puzzle'
+  | 'action'
+  | 'learning'
+  | 'arcade'
+  | 'creativity'
+  | 'strategy'
+  | 'cooperative'
+  | 'competitive';
+
+export interface GamePreference {
+  favoriteTypes: GameCategory[];
+  preferredDifficulty: Difficulty;
+  ageGroup: AgeGroup;
+}
+
+export type MissionCategory = 'cooperative' | 'competitive' | 'learning';
+
+export interface ProfileBadge {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  earnedAt: number;
+}
+
+export interface FamilyMission {
+  id: string;
+  title: string;
+  description: string;
+  category: MissionCategory;
+  rewardBadge: ProfileBadge;
+  completed: boolean;
+  generatedAt: number;
 }
 
 // 게임 난이도
