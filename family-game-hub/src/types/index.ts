@@ -49,3 +49,11 @@ export interface CardThemeData {
   emoji: string;
   cards: string[];
 }
+
+export interface WeeklyChallenge {
+  mission: string;
+  deadline: number;
+  rewardStamp: string;
+  targetPlays: number;
+  rewardClaimed: boolean;
+}
