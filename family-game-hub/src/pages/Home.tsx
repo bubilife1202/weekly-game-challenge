@@ -1,20 +1,41 @@
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
 import { AdSense } from '../components/common/AdSense';
+import { useEffect, useMemo, useState } from 'react';
 
 export const Home = () => {
   const navigate = useNavigate();
   const { profiles, currentProfileId } = useProfileStore();
-  const { getProfileStats, getWeeklyRanking } = useGameStore();
+  const getProfileStats = useGameStore((state) => state.getProfileStats);
+  const getWeeklyRanking = useGameStore((state) => state.getWeeklyRanking);
+  const recentHighlights = useGameStore((state) => state.getRecentHighlights());
+  const weeklySummary = useGameStore((state) => state.getWeeklyHighlightSummary());
+  const addHighlightReaction = useGameStore((state) => state.addHighlightReaction);
+
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
 
   const currentProfile = profiles.find((p) => p.id === currentProfileId);
   const stats = currentProfileId ? getProfileStats(currentProfileId) : null;
   const ranking = getWeeklyRanking();
+
+  const recentHighlightCards = useMemo(
+    () => recentHighlights.slice(0, 5),
+    [recentHighlights]
+  );
+
+  useEffect(() => {
+    if (weeklySummary) {
+      setShowWeeklyReport(true);
+    }
+  }, [weeklySummary?.highlight.id]);
 
   // 버전 정보
   const version = import.meta.env.VITE_APP_VERSION || '1.0.0';
@@ -61,6 +82,98 @@ export const Home = () => {
               >
                 프로필 만들기
               </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* 맞춤 추천 */}
+        {currentProfile && (
+          <Card className="bg-gradient-to-r from-primary/5 to-secondary/5">
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">🎯</span>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-textDark">맞춤 추천</h3>
+                  <span className="text-xs text-gray-500">{currentProfile.name} 전용</span>
+                </div>
+                {recommendations.length > 0 ? (
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {recommendations.map((game) => (
+                      <button
+                        key={game.id}
+                        onClick={() => navigate(game.path)}
+                        className="flex items-start gap-3 rounded-xl border border-primary/20 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <span className="text-2xl">{game.emoji}</span>
+                        <div>
+                          <div className="font-semibold text-textDark">{game.title}</div>
+                          <p className="text-xs text-gray-600 leading-snug">{game.description}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    프로필 선호도를 더 설정하면 맞춤 게임을 추천해드릴게요.
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* 가족 미션 */}
+        {currentProfile && currentProfile.missions && (
+          <Card>
+            <div className="flex items-start gap-3">
+              <span className="text-3xl">🗓️</span>
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-textDark">이번 주 가족 미션</h3>
+                  <span className="text-xs text-gray-500">협동 · 경쟁 · 학습</span>
+                </div>
+                <div className="space-y-2">
+                  {currentProfile.missions.map((mission) => (
+                    <div
+                      key={mission.id}
+                      className="flex items-start gap-3 rounded-xl bg-background p-3"
+                    >
+                      <div className="text-2xl">
+                        {mission.category === 'cooperative'
+                          ? '🤝'
+                          : mission.category === 'competitive'
+                            ? '🏁'
+                            : '📚'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold text-textDark">{mission.title}</div>
+                            <p className="text-sm text-gray-600">{mission.description}</p>
+                          </div>
+                          {mission.completed && (
+                            <span className="text-sm text-secondary font-semibold">완료!</span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <span>{mission.rewardBadge.emoji}</span>
+                            <span>{mission.rewardBadge.name} 배지</span>
+                          </div>
+                          <Button
+                            variant={mission.completed ? 'secondary' : 'primary'}
+                            size="small"
+                            onClick={() => completeMission(currentProfile.id, mission.id)}
+                            disabled={mission.completed}
+                          >
+                            {mission.completed ? '완료됨' : '완료 표시'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </Card>
         )}
@@ -309,6 +422,60 @@ export const Home = () => {
         {/* 광고 영역 */}
         <AdSense className="my-6" />
 
+        {/* 가족 피드 */}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-textDark">👪 가족 피드</h3>
+            <span className="text-sm text-gray-500">
+              최근 하이라이트 {recentHighlightCards.length}건
+            </span>
+          </div>
+
+          {recentHighlightCards.length === 0 ? (
+            <p className="text-gray-600 text-sm">아직 공유된 하이라이트가 없어요.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentHighlightCards.map((highlight) => {
+                const profile = profiles.find((p) => p.id === highlight.profileId);
+                return (
+                  <div
+                    key={highlight.id}
+                    className="flex items-center gap-3 bg-background rounded-xl p-3"
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-white shadow flex items-center justify-center text-2xl">
+                      {profile?.emoji ?? '🎮'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-textDark">
+                          {profile?.name ?? '게스트'}
+                        </span>
+                        <span className="text-xs text-gray-500">{highlight.gameType}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        점수 {highlight.score} • 플레이 {highlight.playTime}초
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(highlight.createdAt).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">👏 {highlight.reactions}</span>
+                      <Button
+                        size="small"
+                        variant="success"
+                        onClick={() => addHighlightReaction(highlight.id)}
+                      >
+                        박수 보내기
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
         {/* 주간 랭킹 */}
         {ranking.length > 0 && (
           <Card>
@@ -372,6 +539,49 @@ export const Home = () => {
           <p className="text-xs mt-1">© 2025 All rights reserved</p>
         </div>
       </div>
+
+      {/* 이번 주 최고 기록 팝업 */}
+      {showWeeklyReport && weeklySummary && (
+        <div className="fixed inset-0 bg-black/30 flex items-end justify-center p-4 z-40">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-bold text-textDark">이번 주 최고 기록</h4>
+              <button
+                onClick={() => setShowWeeklyReport(false)}
+                className="text-xl leading-none"
+                aria-label="주간 리포트 닫기"
+              >
+                ✖️
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-background rounded-xl p-4">
+              <div className="w-14 h-14 rounded-full bg-white shadow flex items-center justify-center text-3xl">
+                {
+                  profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
+                    emoji ?? '🌟'
+                }
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-textDark">
+                  {
+                    profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
+                      name ?? '게스트'
+                  }
+                </div>
+                <div className="text-sm text-gray-600">
+                  {weeklySummary.highlight.gameType} • 점수 {weeklySummary.highlight.score}
+                </div>
+                <div className="text-xs text-gray-500">
+                  공유 {weeklySummary.totalShares}회 · 반응 {weeklySummary.totalReactions}회
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">
+              가족들의 공유와 반응을 모아 이번 주 최고 기록을 보여드려요!
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

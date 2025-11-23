@@ -6,6 +6,48 @@ export interface Profile {
   age?: number;
   color: string;
   createdAt: number;
+  preferences?: GamePreference;
+  badges?: ProfileBadge[];
+  missions?: FamilyMission[];
+  lastMissionGeneratedAt?: number;
+}
+
+export type AgeGroup = 'kids' | 'teens' | 'family';
+
+export type GameCategory =
+  | 'puzzle'
+  | 'action'
+  | 'learning'
+  | 'arcade'
+  | 'creativity'
+  | 'strategy'
+  | 'cooperative'
+  | 'competitive';
+
+export interface GamePreference {
+  favoriteTypes: GameCategory[];
+  preferredDifficulty: Difficulty;
+  ageGroup: AgeGroup;
+}
+
+export type MissionCategory = 'cooperative' | 'competitive' | 'learning';
+
+export interface ProfileBadge {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  earnedAt: number;
+}
+
+export interface FamilyMission {
+  id: string;
+  title: string;
+  description: string;
+  category: MissionCategory;
+  rewardBadge: ProfileBadge;
+  completed: boolean;
+  generatedAt: number;
 }
 
 // 게임 난이도
@@ -44,6 +86,25 @@ export interface GameStats {
   recentGames: GameRecord[];
 }
 
+// 플레이 하이라이트
+export interface PlayHighlight {
+  id: string;
+  profileId: string;
+  gameType: GameRecord['gameType'];
+  score: number;
+  playTime: number;
+  screenshotPath?: string;
+  reactions: number;
+  shares: number;
+  createdAt: number;
+}
+
+export interface WeeklyHighlightSummary {
+  highlight: PlayHighlight;
+  totalReactions: number;
+  totalShares: number;
+}
+
 // 카드 테마
 export type CardTheme = 'animals' | 'fruits' | 'emojis' | 'vehicles';
 
@@ -51,4 +112,12 @@ export interface CardThemeData {
   name: string;
   emoji: string;
   cards: string[];
+}
+
+export interface WeeklyChallenge {
+  mission: string;
+  deadline: number;
+  rewardStamp: string;
+  targetPlays: number;
+  rewardClaimed: boolean;
 }
