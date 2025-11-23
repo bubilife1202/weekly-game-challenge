@@ -1,13 +1,45 @@
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
 import { AdSense } from '../components/common/AdSense';
 import { getRecommendationsFromPreferences } from '../utils/recommendations';
+
+const weeklyRecommendations = [
+  {
+    id: 'memory',
+    title: '카드 뒤집기',
+    icon: '🃏',
+    description: '난이도별 기억력 향상 미션',
+    difficulty: 'easy' as const,
+    age: '6세+',
+    playTime: '5~10분',
+  },
+  {
+    id: 'maze',
+    title: '미로 찾기',
+    icon: '🌟',
+    description: '길을 찾으며 공간지각력 키우기',
+    difficulty: 'medium' as const,
+    age: '8세+',
+    playTime: '5~10분',
+  },
+  {
+    id: '2048',
+    title: '2048',
+    icon: '🔢',
+    description: '숫자를 합쳐 목표 점수 도전',
+    difficulty: 'hard' as const,
+    age: '10세+',
+    playTime: '5~10분',
+  },
+];
 
 export const Home = () => {
   const navigate = useNavigate();
