@@ -28,6 +28,9 @@ export interface GameRecord {
   time: number; // 초 단위
   attempts?: number;
   accuracy?: number; // 퍼센트
+  streakCount?: number;
+  bonusScore?: number;
+  bonusSkin?: string;
   completedAt: number;
 }
 

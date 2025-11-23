@@ -17,19 +17,25 @@ import {
 } from '../utils/galaga';
 import { useGameStore } from '../store/gameStore';
 import { useProfileStore } from '../store/profileStore';
+import { useSettingsStore } from '../store/settingsStore';
+import { QuickRulesCard } from '../components/common/QuickRulesCard';
 
 export const Galaga = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
   const [autoFire, setAutoFire] = useState(true); // 모바일 기본값 true
+  const [playCount, setPlayCount] = useState(0);
   const keysPressed = useRef<Set<string>>(new Set());
   const touchStartX = useRef<number>(0);
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const lastFrameRef = useRef<number | null>(null);
   const [gameSize, setGameSize] = useState({ width: 400, height: 600 });
 
   const { addRecord } = useGameStore();
   const { currentProfileId } = useProfileStore();
+  const { targetFps, lowPerformanceMode, toggleLowPerformanceMode, setTargetFps } =
+    useSettingsStore();
 
   // 게임 크기를 화면에 맞게 조정
   useEffect(() => {
@@ -63,64 +69,87 @@ export const Galaga = () => {
     setGameState(initialState);
     setShowInstructions(false);
     setIsPaused(false);
+    setPlayCount((count) => count + 1);
+    lastFrameRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (isPaused) {
+      lastFrameRef.current = null;
+    }
+  }, [isPaused]);
 
   // 게임 루프 - 터치 버그 수정
   useEffect(() => {
     if (!gameState || gameState.gameOver || isPaused) return;
 
-    const gameLoop = setInterval(() => {
-      setGameState((prevState) => {
-        if (!prevState || prevState.gameOver) return prevState;
+    const frameDuration = (1000 / targetFps) * (lowPerformanceMode ? 1.25 : 1);
 
-        let newState = { ...prevState };
+    const loop = (time: number) => {
+      if (!lastFrameRef.current) {
+        lastFrameRef.current = time;
+      }
 
-        // 플레이어 이동
-        if (keysPressed.current.has('ArrowLeft') || keysPressed.current.has('a')) {
-          newState = movePlayer(newState, 'left');
-        }
-        if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('d')) {
-          newState = movePlayer(newState, 'right');
-        }
+      const delta = time - lastFrameRef.current;
+      if (delta >= frameDuration) {
+        lastFrameRef.current = time;
 
-        // 총알 이동
-        newState = moveBullets(newState);
+        setGameState((prevState) => {
+          if (!prevState || prevState.gameOver) return prevState;
 
-        // 적 이동
-        newState = moveEnemies(newState);
+          let newState = { ...prevState };
 
-        // 충돌 감지
-        newState = checkCollisions(newState);
-
-        // 게임 오버 체크
-        if (newState.lives <= 0 && !prevState.gameOver) {
-          newState.gameOver = true;
-          soundManager.playMismatch();
-
-          // 게임 결과 저장
-          if (currentProfileId) {
-            addRecord({
-              profileId: currentProfileId,
-              gameType: 'galaga',
-              difficulty: 'medium',
-              score: newState.score,
-              time: newState.level,
-              completedAt: Date.now(),
-            });
+          // 플레이어 이동
+          if (keysPressed.current.has('ArrowLeft') || keysPressed.current.has('a')) {
+            newState = movePlayer(newState, 'left');
           }
-        }
+          if (keysPressed.current.has('ArrowRight') || keysPressed.current.has('d')) {
+            newState = movePlayer(newState, 'right');
+          }
 
-        return newState;
-      });
-    }, 1000 / 60); // 60 FPS
+          // 총알 이동
+          newState = moveBullets(newState);
 
-    return () => clearInterval(gameLoop);
-  }, [isPaused, currentProfileId, addRecord]);
+          // 적 이동
+          newState = moveEnemies(newState);
+
+          // 충돌 감지
+          newState = checkCollisions(newState);
+
+          // 게임 오버 체크
+          if (newState.lives <= 0 && !prevState.gameOver) {
+            newState.gameOver = true;
+            soundManager.playMismatch();
+
+            // 게임 결과 저장
+            if (currentProfileId) {
+              addRecord({
+                profileId: currentProfileId,
+                gameType: 'galaga',
+                difficulty: 'medium',
+                score: newState.score,
+                time: newState.level,
+                completedAt: Date.now(),
+              });
+            }
+          }
+
+          return newState;
+        });
+      }
+
+      requestAnimationFrame(loop);
+    };
+
+    const frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [isPaused, currentProfileId, addRecord, targetFps, lowPerformanceMode, gameState?.gameOver]);
 
   // 자동 발사 - 버그 수정
   useEffect(() => {
     if (!gameState || gameState.gameOver || isPaused || !autoFire) return;
 
+    const autoFireDelay = lowPerformanceMode ? 450 : 300;
     const autoFireInterval = setInterval(() => {
       setGameState((prev) => {
         if (!prev || prev.gameOver || prev.bullets.length >= 3) return prev;
@@ -130,10 +159,10 @@ export const Galaga = () => {
           bullets: [...prev.bullets, createBullet(prev.playerX)],
         };
       });
-    }, 300); // 300ms마다 자동 발사
+    }, autoFireDelay);
 
     return () => clearInterval(autoFireInterval);
-  }, [isPaused, autoFire]);
+  }, [isPaused, autoFire, lowPerformanceMode, gameState?.gameOver]);
 
   // 키보드 컨트롤
   useEffect(() => {
@@ -219,6 +248,54 @@ export const Galaga = () => {
         <Header title="🚀 갤러그" showBack />
 
         <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
+          <QuickRulesCard
+            title="15초 퀵 가이드"
+            subtitle="2판 이후 자동으로 접혀요"
+            playCount={playCount}
+            accentEmoji="🚀"
+            rules={[
+              '좌우 이동만 신경쓰며 탄환을 자동/수동으로 발사하세요.',
+              '적이 맵 아래로 내려오면 라이프가 줄어듭니다.',
+              '3판 연속 플레이 시 보너스 점수와 우주선 스킨을 획득! ',
+            ]}
+            tips={[
+              `${targetFps}fps 목표 유지로 부드러운 패턴 읽기`,
+              '저성능 모드에서는 적 이동이 느긋해져요.',
+            ]}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="bg-white/10 rounded-xl p-3 shadow flex items-center justify-between gap-2 border border-white/10">
+              <div>
+                <div className="text-xs text-white/70">목표 프레임</div>
+                <div className="font-bold text-white">{targetFps} fps</div>
+              </div>
+              <Button
+                size="small"
+                variant="secondary"
+                animated
+                onClick={() => setTargetFps(targetFps === 60 ? 48 : 60)}
+              >
+                {targetFps === 60 ? '절전 48fps' : '60fps로'}
+              </Button>
+            </div>
+
+            <div className="bg-white/10 rounded-xl p-3 shadow flex items-center justify-between gap-2 border border-white/10">
+              <div>
+                <div className="text-xs text-white/70">저성능 모드</div>
+                <div className="font-bold text-white">{lowPerformanceMode ? 'ON' : 'OFF'}</div>
+              </div>
+              <Button
+                size="small"
+                variant={lowPerformanceMode ? 'secondary' : 'primary'}
+                animated
+                onClick={toggleLowPerformanceMode}
+              >
+                {lowPerformanceMode ? '해제' : '켜기'}
+              </Button>
+            </div>
+          </div>
+
           <div className="text-center space-y-4">
             <div className="text-8xl">🚀</div>
             <h2 className="text-3xl font-bold text-white">갤러그</h2>
@@ -262,7 +339,7 @@ export const Galaga = () => {
             </ul>
           </div>
 
-          <Button variant="primary" onClick={startGame} fullWidth>
+          <Button variant="primary" onClick={startGame} fullWidth animated>
             🎮 게임 시작
           </Button>
         </div>
@@ -289,6 +366,50 @@ export const Galaga = () => {
       />
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
+        <QuickRulesCard
+          title="빠른 규칙 카드"
+          subtitle="15초 후 자동으로 접힙니다"
+          playCount={playCount}
+          accentEmoji="🛸"
+          rules={['좌우 이동으로 회피하며 자동/수동 발사 관리', '적이 아래로 내려오기 전에 제거', '3판 연속 플레이 시 보너스 점수와 스킨 지급']}
+          tips={[
+            `${targetFps}fps 유지로 탄막 읽기 향상`,
+            lowPerformanceMode ? '저성능 모드: 패턴이 한テン포 느려집니다.' : '고성능: 반응성을 최대로!',
+          ]}
+        />
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/10 rounded-xl p-3 shadow flex items-center justify-between gap-2 border border-white/10 text-white">
+            <div>
+              <div className="text-xs text-white/70">목표 프레임</div>
+              <div className="font-bold">{targetFps} fps</div>
+            </div>
+            <Button
+              size="small"
+              variant="secondary"
+              animated
+              onClick={() => setTargetFps(targetFps === 60 ? 48 : 60)}
+            >
+              {targetFps === 60 ? '절전 48fps' : '60fps로'}
+            </Button>
+          </div>
+
+          <div className="bg-white/10 rounded-xl p-3 shadow flex items-center justify-between gap-2 border border-white/10 text-white">
+            <div>
+              <div className="text-xs text-white/70">저성능 모드</div>
+              <div className="font-bold">{lowPerformanceMode ? 'ON' : 'OFF'}</div>
+            </div>
+            <Button
+              size="small"
+              variant={lowPerformanceMode ? 'secondary' : 'primary'}
+              animated
+              onClick={toggleLowPerformanceMode}
+            >
+              {lowPerformanceMode ? '해제' : '켜기'}
+            </Button>
+          </div>
+        </div>
+
         {/* 상태 표시 */}
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 shadow-md">
           <div className="grid grid-cols-3 gap-4 text-center text-white">
