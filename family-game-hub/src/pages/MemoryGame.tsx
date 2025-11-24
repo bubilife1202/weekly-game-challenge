@@ -6,14 +6,14 @@ import { soundManager } from '../utils/sound';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
 import { MemoryCard } from '../components/game/MemoryCard';
-import { ResultModal } from '../components/game/ResultModal';
+import { GameOverModal } from '../components/common/GameOverModal';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
 
 export const MemoryGame = () => {
   const navigate = useNavigate();
   const { currentProfileId } = useProfileStore();
-  const { addRecord, getProfileStats, dailyMission, weeklyMission } =
+  const { addRecord, getProfileStats } =
     useGameStore();
 
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
@@ -25,7 +25,6 @@ export const MemoryGame = () => {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [sharedHighlightId, setSharedHighlightId] = useState<string | null>(null);
 
   const timeoutRef = useRef<number | null>(null);
 
@@ -72,7 +71,6 @@ export const MemoryGame = () => {
         };
 
         addRecord(record);
-        setSharedHighlightId(null);
       }
 
       const resultTimeout = setTimeout(() => setShowResult(true), 500);
@@ -295,31 +293,28 @@ export const MemoryGame = () => {
       </div>
 
       {/* 결과 모달 */}
-      <ResultModal
+      <GameOverModal
         isOpen={showResult}
-        time={finalTime}
-        attempts={attempts}
-        accuracy={accuracy}
-        isNewRecord={isNewRecord}
-        missions={[dailyMission, weeklyMission]}
-        onPlayAgain={handlePlayAgain}
-        onGoHome={handleGoHome}
-        onShare={() => {
-          if (!currentProfileId || !startTime || !endTime || !difficulty) return;
-          const playTime = Math.floor((endTime - startTime) / 1000);
-          const highlightId =
-            sharedHighlightId ??
-            addHighlight({
-              profileId: currentProfileId,
-              gameType: 'memory',
-              score: matchedPairs,
-              playTime,
-              screenshotPath: '/og-template.svg',
-            });
-
-          addHighlightShare(highlightId);
-          setSharedHighlightId(highlightId);
-        }}
+        score={finalTime} // 점수 대신 시간 표시 (낮을수록 좋음)
+        bestScore={previousBest?.time}
+        gameName="Memory Game"
+        onRestart={handlePlayAgain}
+        onHome={handleGoHome}
+        additionalInfo={
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div>
+                <span className="block text-xs text-gray-400">걸린 시간</span>
+                <span className="font-bold text-gray-700">{finalTime}초</span>
+              </div>
+              <div>
+                <span className="block text-xs text-gray-400">시도 횟수</span>
+                <span className="font-bold text-gray-700">{attempts}회</span>
+              </div>
+              <div className="col-span-2 text-xs text-blue-500 mt-2">
+                 {isNewRecord ? "🎉 신기록 달성!" : "조금만 더 노력해보세요!"}
+              </div>
+            </div>
+        }
       />
     </div>
   );
