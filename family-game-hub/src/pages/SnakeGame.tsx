@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '../components/common/Header';
 import { Button } from '../components/common/Button';
-import { AdSense } from '../components/common/AdSense';
 import { soundManager } from '../utils/sound';
 import {
   createInitialState,
@@ -16,6 +15,8 @@ import { useGameStore } from '../store/gameStore';
 import { useProfileStore } from '../store/profileStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { QuickRulesCard } from '../components/common/QuickRulesCard';
+import { SEO } from '../components/common/SEO';
+import { GameOverModal } from '../components/common/GameOverModal';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -273,6 +274,11 @@ export const SnakeGame = () => {
   if (!difficulty || !gameState) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+        <SEO
+          title="Snake 게임 - 세계 1위 도전!"
+          description="초고속 반응속도 테스트! 뱀 게임에서 1등에 도전하세요."
+          url="/snake"
+        />
         <Header title="🐍 Snake 게임" showBack />
 
         <div className="max-w-2xl mx-auto p-4 space-y-6 py-8">
@@ -404,6 +410,10 @@ export const SnakeGame = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 pb-6">
+      <SEO
+        title={`Snake 게임 - 점수: ${gameState.score}`}
+        url="/snake"
+      />
       <Header
         title="🐍 Snake"
         showBack
@@ -595,58 +605,30 @@ export const SnakeGame = () => {
           </>
         )}
 
-        {/* 게임 오버 메시지 */}
-        {gameState.gameOver && (
-          <>
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 border-4 border-red-400 rounded-2xl p-6 shadow-xl text-center space-y-4 animate-bounce-in">
-              <div className="text-6xl">💀</div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-textDark">Game Over!</h2>
-                <div className="text-lg text-gray-700">
-                  <div>점수: {gameState.score}</div>
-                  <div>길이: {gameState.snake.length}</div>
-                  <div>시간: {formatTime(timer)}</div>
-                </div>
+        {/* 게임 오버 모달 */}
+        <GameOverModal
+          isOpen={gameState.gameOver}
+          score={gameState.score}
+          gameName="Snake"
+          onRestart={() => startGame(difficulty)}
+          onHome={() => {
+            setDifficulty(null);
+            setGameState(null);
+          }}
+          additionalInfo={
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div>
+                <span className="block text-xs text-gray-400">길이</span>
+                <span className="font-bold text-gray-700">{gameState.snake.length}</span>
               </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="primary"
-                  onClick={() => startGame(difficulty)}
-                  fullWidth
-                  animated
-                >
-                  🔄 다시 하기
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setDifficulty(null);
-                    setGameState(null);
-                  }}
-                  fullWidth
-                  animated
-                >
-                  📋 난이도 선택
-                </Button>
+              <div>
+                <span className="block text-xs text-gray-400">생존 시간</span>
+                <span className="font-bold text-gray-700">{formatTime(timer)}</span>
               </div>
             </div>
-
-            {/* 게임 오버 후 광고 */}
-            <AdSense className="my-4" />
-          </>
-        )}
+          }
+        />
       </div>
-
-      <style>{`
-        @keyframes bounce-in {
-          0% { transform: scale(0.8); opacity: 0; }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-bounce-in {
-          animation: bounce-in 0.5s ease-out;
-        }
-      `}</style>
     </div>
   );
 };

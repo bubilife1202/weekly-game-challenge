@@ -1,15 +1,41 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useProfileStore } from '../store/profileStore';
 import { useGameStore } from '../store/gameStore';
-import { useSettingsStore } from '../store/settingsStore';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { ProfileSelector } from '../components/profile/ProfileSelector';
 import { Header } from '../components/common/Header';
 import { AdSense } from '../components/common/AdSense';
-import { useEffect, useMemo, useState } from 'react';
+import { SEO } from '../components/common/SEO';
+import { Leaderboard } from '../components/common/Leaderboard';
+import { useEffect } from 'react';
+import type { GameCategory } from '../types';
+
+interface GameRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  path: string;
+  category: GameCategory;
+}
+
+const ALL_GAMES: GameRecommendation[] = [
+  { id: 'memory', title: '카드 뒤집기', description: '기억력을 테스트해보세요!', emoji: '🃏', path: '/game/memory', category: 'puzzle' },
+  { id: 'coloring', title: '색칠하기', description: '창의력을 발휘해보세요!', emoji: '🎨', path: '/game/coloring', category: 'creativity' },
+  { id: 'world-map', title: '세계 지도 퀴즈', description: '나라와 수도를 배워요!', emoji: '🌍', path: '/game/world-map', category: 'learning' },
+  { id: 'english-words', title: '영어 단어 외우기', description: '학년별 영어 단어 학습!', emoji: '🔤', path: '/game/english-words', category: 'learning' },
+  { id: 'english-sentences', title: '영어 문장 만들기', description: '3가지 모드로 문장 학습!', emoji: '📖', path: '/game/english-sentences', category: 'learning' },
+  { id: 'sudoku', title: '스도쿠', description: '논리적 사고력 향상!', emoji: '🧩', path: '/game/sudoku', category: 'puzzle' },
+  { id: 'maze', title: '미로 찾기', description: '길을 찾아 골인!', emoji: '🌟', path: '/game/maze', category: 'puzzle' },
+  { id: 'snake', title: '스네이크', description: '꼬리가 길어지지 않게 조심!', emoji: '🐍', path: '/game/snake', category: 'action' },
+  { id: '2048', title: '2048', description: '합쳐서 2048 만들기!', emoji: '🔢', path: '/game/2048', category: 'puzzle' },
+  { id: 'minesweeper', title: '지뢰찾기', description: '논리로 지뢰 찾기!', emoji: '💣', path: '/game/minesweeper', category: 'puzzle' },
+  { id: 'galaga', title: '갤러그', description: '우주 슈팅 게임!', emoji: '🚀', path: '/game/galaga', category: 'action' },
+  { id: 'breakout', title: '벽돌깨기', description: '패들로 공을 튕겨요!', emoji: '🧱', path: '/game/breakout', category: 'action' },
+  { id: 'mario', title: '슈퍼 점프맨', description: '점프하고 달려요!', emoji: '🍄', path: '/game/mario', category: 'action' },
+  { id: 'wind-legacy', title: '바람의 유산', description: '시간을 되감고 퍼즐을 풀어요!', emoji: '🌪️', path: '/game/wind-legacy', category: 'action' },
+];
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -43,16 +69,6 @@ export const Home = () => {
     diamond: '👑',
   };
 
-  const recentHighlightCards = useMemo(
-    () => recentHighlights.slice(0, 5),
-    [recentHighlights]
-  );
-
-  useEffect(() => {
-    if (weeklySummary) {
-      setShowWeeklyReport(true);
-    }
-  }, [weeklySummary?.highlight.id]);
 
   // 버전 정보
   const version = import.meta.env.VITE_APP_VERSION || '1.0.0';
@@ -61,6 +77,7 @@ export const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO />
       <Header
         title="🎮 Family Game Hub"
         rightElement={
@@ -169,27 +186,21 @@ export const Home = () => {
                   <h3 className="text-xl font-bold text-textDark">맞춤 추천</h3>
                   <span className="text-xs text-gray-500">{currentProfile.name} 전용</span>
                 </div>
-                {recommendations.length > 0 ? (
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {recommendations.map((game) => (
-                      <button
-                        key={game.id}
-                        onClick={() => navigate(game.path)}
-                        className="flex items-start gap-3 rounded-xl border border-primary/20 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                      >
-                        <span className="text-2xl">{game.emoji}</span>
-                        <div>
-                          <div className="font-semibold text-textDark">{game.title}</div>
-                          <p className="text-xs text-gray-600 leading-snug">{game.description}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-600">
-                    프로필 선호도를 더 설정하면 맞춤 게임을 추천해드릴게요.
-                  </p>
-                )}
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {ALL_GAMES.filter(g => currentProfile.preferences?.favoriteTypes.includes(g.category)).slice(0, 3).map((game) => (
+                    <button
+                      key={game.id}
+                      onClick={() => navigate(game.path)}
+                      className="flex items-start gap-3 rounded-xl border border-primary/20 bg-white/70 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <span className="text-2xl">{game.emoji}</span>
+                      <div>
+                        <div className="font-semibold text-textDark">{game.title}</div>
+                        <p className="text-xs text-gray-600 leading-snug">{game.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
@@ -236,7 +247,7 @@ export const Home = () => {
                           <Button
                             variant={mission.completed ? 'secondary' : 'primary'}
                             size="small"
-                            onClick={() => completeMission(currentProfile.id, mission.id)}
+                            onClick={() => {}}
                             disabled={mission.completed}
                           >
                             {mission.completed ? '완료됨' : '완료 표시'}
@@ -254,306 +265,51 @@ export const Home = () => {
         {/* 게임 목록 */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-textDark">게임 선택</h2>
-
-          {/* 카드 뒤집기 게임 */}
-          <Card onClick={() => navigate('/game/memory')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🃏</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">
-                      카드 뒤집기
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      같은 카드를 찾아보세요!
-                    </p>
+          {ALL_GAMES.map((game) => (
+             <Card key={game.id} onClick={() => navigate(game.path)}>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl">{game.emoji}</span>
+                    <div>
+                      <h3 className="text-xl font-bold text-textDark">
+                        {game.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {game.description}
+                      </p>
+                    </div>
                   </div>
+                  {/* 통계 (Memory Game 전용) */}
+                  {game.id === 'memory' && stats && stats.bestRecords.easy && (
+                    <div className="flex gap-2 text-sm text-gray-600 ml-14">
+                      <span>⭐ 최고기록:</span>
+                      <span className="font-bold text-primary">
+                        {stats.bestRecords.easy.time}초
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {stats && stats.bestRecords.easy && (
-                  <div className="flex gap-2 text-sm text-gray-600 ml-14">
-                    <span>⭐ 최고기록:</span>
-                    <span className="font-bold text-primary">
-                      {stats.bestRecords.easy.time}초
-                    </span>
-                  </div>
-                )}
+                <div className="text-2xl">→</div>
               </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 색칠하기 게임 */}
-          <Card onClick={() => navigate('/game/coloring')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🎨</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">색칠하기</h3>
-                    <p className="text-sm text-gray-600">마음껏 색칠해보세요!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 세계 지도 퀴즈 */}
-          <Card onClick={() => navigate('/game/world-map')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🌍</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">세계 지도 퀴즈</h3>
-                    <p className="text-sm text-gray-600">나라와 수도를 배워요!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 영어 단어 외우기 */}
-          <Card onClick={() => navigate('/game/english-words')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🔤</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">영어 단어 외우기</h3>
-                    <p className="text-sm text-gray-600">학년별 영어 단어 학습!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 영어 문장 만들기 */}
-          <Card onClick={() => navigate('/game/english-sentences')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">📖</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">영어 문장 만들기</h3>
-                    <p className="text-sm text-gray-600">3가지 모드로 문장 학습!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 스도쿠 */}
-          <Card onClick={() => navigate('/game/sudoku')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🧩</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">스도쿠</h3>
-                    <p className="text-sm text-gray-600">논리적 사고력 향상!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 미로 찾기 */}
-          <Card onClick={() => navigate('/game/maze')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🌟</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">미로 찾기</h3>
-                    <p className="text-sm text-gray-600">길을 찾아 골인!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* Snake 게임 */}
-          <Card onClick={() => navigate('/game/snake')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🐍</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">Snake 게임</h3>
-                    <p className="text-sm text-gray-600">먹고 길어지기!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 2048 */}
-          <Card onClick={() => navigate('/game/2048')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🔢</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">2048</h3>
-                    <p className="text-sm text-gray-600">합쳐서 2048 만들기!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 지뢰찾기 */}
-          <Card onClick={() => navigate('/game/minesweeper')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">💣</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">지뢰찾기</h3>
-                    <p className="text-sm text-gray-600">논리로 지뢰 찾기!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 갤러그 */}
-          <Card onClick={() => navigate('/game/galaga')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🚀</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">갤러그</h3>
-                    <p className="text-sm text-gray-600">우주 슈팅 게임!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 벽돌깨기 */}
-          <Card onClick={() => navigate('/game/breakout')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🧱</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">벽돌깨기</h3>
-                    <p className="text-sm text-gray-600">패들로 공을 튕겨요!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 슈퍼 점프맨 */}
-          <Card onClick={() => navigate('/game/mario')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🍄</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">슈퍼 점프맨</h3>
-                    <p className="text-sm text-gray-600">점프하고 달려요!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
-
-          {/* 바람의 유산 */}
-          <Card onClick={() => navigate('/game/wind-legacy')}>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🌪️</span>
-                  <div>
-                    <h3 className="text-xl font-bold text-textDark">바람의 유산</h3>
-                    <p className="text-sm text-gray-600">시간을 되감고 퍼즐을 풀어요!</p>
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl">→</div>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
 
         {/* 광고 영역 */}
         <AdSense className="my-6" />
 
-        {/* 가족 피드 */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-textDark">👪 가족 피드</h3>
-            <span className="text-sm text-gray-500">
-              최근 하이라이트 {recentHighlightCards.length}건
-            </span>
-          </div>
 
-          {recentHighlightCards.length === 0 ? (
-            <p className="text-gray-600 text-sm">아직 공유된 하이라이트가 없어요.</p>
-          ) : (
-            <div className="space-y-3">
-              {recentHighlightCards.map((highlight) => {
-                const profile = profiles.find((p) => p.id === highlight.profileId);
-                return (
-                  <div
-                    key={highlight.id}
-                    className="flex items-center gap-3 bg-background rounded-xl p-3"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-white shadow flex items-center justify-center text-2xl">
-                      {profile?.emoji ?? '🎮'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-textDark">
-                          {profile?.name ?? '게스트'}
-                        </span>
-                        <span className="text-xs text-gray-500">{highlight.gameType}</span>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        점수 {highlight.score} • 플레이 {highlight.playTime}초
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(highlight.createdAt).toLocaleString('ko-KR')}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">👏 {highlight.reactions}</span>
-                      <Button
-                        size="small"
-                        variant="success"
-                        onClick={() => addHighlightReaction(highlight.id)}
-                      >
-                        박수 보내기
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+        {/* 글로벌 리더보드 (New) */}
+        <div className="mb-6">
+           <Leaderboard />
+        </div>
 
-        {/* 주간 랭킹 */}
+        {/* 주간 랭킹 (Local) */}
         {ranking.length > 0 && (
           <Card>
             <h3 className="text-xl font-bold text-textDark mb-4">
-              🏆 이번 주 챔피언
+              🏠 우리 집 챔피언
             </h3>
             <div className="space-y-3">
               {ranking.slice(0, 3).map((rank, index) => {
@@ -638,48 +394,6 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* 이번 주 최고 기록 팝업 */}
-      {showWeeklyReport && weeklySummary && (
-        <div className="fixed inset-0 bg-black/30 flex items-end justify-center p-4 z-40">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-lg font-bold text-textDark">이번 주 최고 기록</h4>
-              <button
-                onClick={() => setShowWeeklyReport(false)}
-                className="text-xl leading-none"
-                aria-label="주간 리포트 닫기"
-              >
-                ✖️
-              </button>
-            </div>
-            <div className="flex items-center gap-3 bg-background rounded-xl p-4">
-              <div className="w-14 h-14 rounded-full bg-white shadow flex items-center justify-center text-3xl">
-                {
-                  profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
-                    emoji ?? '🌟'
-                }
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-textDark">
-                  {
-                    profiles.find((p) => p.id === weeklySummary.highlight.profileId)?.
-                      name ?? '게스트'
-                  }
-                </div>
-                <div className="text-sm text-gray-600">
-                  {weeklySummary.highlight.gameType} • 점수 {weeklySummary.highlight.score}
-                </div>
-                <div className="text-xs text-gray-500">
-                  공유 {weeklySummary.totalShares}회 · 반응 {weeklySummary.totalReactions}회
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">
-              가족들의 공유와 반응을 모아 이번 주 최고 기록을 보여드려요!
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
